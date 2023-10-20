@@ -10,6 +10,7 @@ import scala.io.{BufferedSource, Source, StdIn}
 import scala.concurrent.duration.*
 import scala.util.Random
 
+// 2
 object CatsEffect extends IOApp.Simple {
 
   /*
