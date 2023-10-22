@@ -1,4 +1,4 @@
-package rop.jobsboard.foundations
+package rop.foundations
 
 import cats.effect.kernel.Resource
 import cats.effect.{IO, IOApp, MonadCancelThrow}

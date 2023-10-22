@@ -1,4 +1,4 @@
-package rop.jobsboard.foundations
+package rop.foundations
 
 import cats.{Defer, MonadError}
 import cats.effect.kernel.{Fiber, Spawn}

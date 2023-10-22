@@ -1,4 +1,4 @@
-package rop.jobsboard.foundations
+package rop.foundations
 
 // 1
 object Cats {
