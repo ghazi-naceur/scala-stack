@@ -20,7 +20,7 @@ import pureconfig.ConfigSource
 import pureconfig.error.ConfigReaderException
 import rop.jobsboard.config.*
 import rop.jobsboard.config.syntax.*
-import rop.jobsboard.http.routes.HealthRoutes
+import rop.jobsboard.http.HttpApi
 
 /*
   1- Add plain health endpoint to our app
@@ -38,7 +38,7 @@ object Application extends IOApp.Simple {
           .default[IO]
           .withHost(config.host)
           .withPort(config.port)
-          .withHttpApp(HealthRoutes[IO].routes.orNotFound)
+          .withHttpApp(HttpApi[IO].endpoints.orNotFound)
           .build
           .use(_ => IO.println("Server ready") *> IO.never)
       )

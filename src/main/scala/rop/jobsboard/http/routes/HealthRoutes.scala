@@ -9,8 +9,8 @@ import org.http4s.server.*
 class HealthRoutes[F[_]: Monad] private extends Http4sDsl[F] {
 
   // REST endpoints
-  // http GET 'localhost:4041/health'
-  // http GET 'localhost:4041/something'
+  // http GET '/health'
+  // http GET '/something'
   private val healthRoute: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root =>
     Ok("All going great!")
   }
