@@ -21,14 +21,12 @@ import pureconfig.error.ConfigReaderException
 import rop.jobsboard.config.*
 import rop.jobsboard.config.syntax.*
 import rop.jobsboard.http.HttpApi
-
-/*
-  1- Add plain health endpoint to our app
-  2- Add minimal configuration
-  3- Basic http server layout
- */
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 object Application extends IOApp.Simple {
+
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   override def run: IO[Unit] = {
     ConfigSource.default

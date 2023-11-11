@@ -1,0 +1,8 @@
+{
+  "company" : "SomeCorp",
+  "title" : "Java developer",
+  "description" : "This is a job description",
+  "externalUrl" : "https://firefox.com",
+  "remote" : true,
+  "location" : "Amsterdam"
+}
