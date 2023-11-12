@@ -22,7 +22,7 @@ import rop.jobsboard.config.*
 import rop.jobsboard.config.syntax.*
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import rop.jobsboard.modules.{Core, HttpApi}
+import rop.jobsboard.modules.{Core, Database, HttpApi}
 
 object Application extends IOApp.Simple {
 
@@ -30,16 +30,17 @@ object Application extends IOApp.Simple {
 
   override def run: IO[Unit] = {
     ConfigSource.default
-      .loadF[IO, EmberConfig]
-      .flatMap { config =>
+      .loadF[IO, AppConfig]
+      .flatMap { case AppConfig(postgresConfig, emberConfig) =>
         val appResource = for {
-          core    <- Core[IO]
+          xa      <- Database.makePostgresResource[IO](postgresConfig)
+          core    <- Core[IO](xa)
           httpApi <- HttpApi[IO](core)
           server <-
             EmberServerBuilder
               .default[IO]
-              .withHost(config.host)
-              .withPort(config.port)
+              .withHost(emberConfig.host)
+              .withPort(emberConfig.port)
               .withHttpApp(httpApi.endpoints.orNotFound)
               .build
         } yield server
