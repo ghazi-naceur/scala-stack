@@ -9,14 +9,15 @@ import org.http4s.*
 import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
-import rop.jobsboard.domain.Job.*
-import rop.jobsboard.http.responses.*
-import rop.jobsboard.core.*
 import org.typelevel.log4cats.Logger
 import scala.collection.mutable
 import java.util.UUID
+import rop.jobsboard.domain.Job.*
+import rop.jobsboard.http.responses.*
+import rop.jobsboard.core.*
+import rop.jobsboard.http.validation.syntax.*
 
-class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4sDsl[F] {
+class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
 
   // database
 
@@ -46,24 +47,25 @@ class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4s
   // http post localhost:4041/api/jobs/create < src/main/resources/payloads/jobinfo.json
   import rop.jobsboard.logging.syntax.*
   private val createJobRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "create" =>
-    for {
-      _        <- Logger[F].info("Trying to add job")
-      jobInfo  <- req.as[JobInfo].logError(e => s"Parsing payload failed: $e")
-      jobId    <- jobs.create("todo@gmail.com", jobInfo)
-      response <- Created(jobId)
-    } yield response
+    req.validate[JobInfo] { jobInfo =>
+      for {
+        jobId    <- jobs.create("todo@gmail.com", jobInfo)
+        response <- Created(jobId)
+      } yield response
+    }
   }
 
   // http PUT '/jobs/uuid { jobInfo }'
   // http put localhost:4041/api/jobs/9d50c421-4ddf-4165-9941-a531106003f4 < src/main/resources/payloads/jobinfo2.json
   private val updateJobRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ PUT -> Root / UUIDVar(id) =>
-    for {
-      jobInfo      <- req.as[JobInfo]
-      potentialJob <- jobs.update(id, jobInfo)
-      response <- potentialJob match
-        case Some(job) => Ok()
-        case None      => NotFound(FailureResponse(s"Cannot update job '$id', because it is not found"))
-    } yield response
+    req.validate[JobInfo] { jobInfo =>
+      for {
+        potentialJob <- jobs.update(id, jobInfo)
+        response <- potentialJob match
+          case Some(job) => Ok()
+          case None      => NotFound(FailureResponse(s"Cannot update job '$id', because it is not found"))
+      } yield response
+    }
   }
 
   // http DELETE '/jobs/uuid'
