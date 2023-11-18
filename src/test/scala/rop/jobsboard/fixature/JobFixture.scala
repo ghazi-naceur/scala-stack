@@ -87,7 +87,7 @@ trait JobFixture {
     TestJob.copy(jobInfo = TestJob.jobInfo.copy(company = "Corp"))
 
   val NewJobUuid: UUID = UUID.fromString("efcd2a64-4463-453a-ada8-b1bae1db4377")
-  val TestNewJob: JobInfo = JobInfo(
+  val TestNewJobInfo: JobInfo = JobInfo(
     "Some Company",
     "Tech Lead",
     "A job in Amsterdam",

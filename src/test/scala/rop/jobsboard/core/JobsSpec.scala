@@ -1,0 +1,134 @@
+package rop.jobsboard.core
+
+import cats.effect.*
+import cats.effect.implicits.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
+import cats.effect.testing.scalatest.AsyncIOSpec
+import org.scalatest.freespec.AsyncFreeSpec
+import org.scalatest.matchers.should.Matchers
+import rop.jobsboard.fixature.JobFixture
+
+class JobsSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with DoobieSpec with JobFixture {
+
+  override val initScript: String = "sql/jobs.sql"
+
+  "Jobs 'algebra'" - {
+    "should return no job if the given UUID does not exist" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          retrieved <- jobs.find(NotFoundJobUuid)
+        } yield retrieved
+
+        program.asserting(_ shouldBe None)
+      }
+    }
+
+    "should retrieve job by id" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          retrieved <- jobs.find(TestJobUuid)
+        } yield retrieved
+
+        program.asserting(_ shouldBe Some(TestJob))
+      }
+    }
+
+    "should retrieve None when trying to retrieve a job that doesn't exist" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          retrieved <- jobs.find(NotFoundJobUuid)
+        } yield retrieved
+
+        program.asserting(_ shouldBe None)
+      }
+    }
+
+    "should retrieve all jobs" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          retrieved <- jobs.all()
+        } yield retrieved
+
+        program.asserting(_ shouldBe List(TestJob))
+      }
+    }
+
+    "should create a new job" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          jobId     <- jobs.create("someone@gmail.com", TestNewJobInfo)
+          retrieved <- jobs.find(jobId)
+        } yield retrieved
+
+        program.asserting(_.map(_.jobInfo) shouldBe Some(TestNewJobInfo))
+      }
+    }
+
+    "should update a job if it exists" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          retrieved <- jobs.update(TestJobUuid, UpdatedTestJob.jobInfo)
+
+        } yield retrieved
+
+        program.asserting(_ shouldBe Some(UpdatedTestJob))
+      }
+    }
+
+    "should return a None when trying to update a non-existent job" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          retrieved <- jobs.update(NotFoundJobUuid, UpdatedTestJob.jobInfo)
+
+        } yield retrieved
+
+        program.asserting(_ shouldBe None)
+      }
+    }
+
+    "should delete a job if it exists" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          retrieved <- jobs.delete(TestJobUuid)
+        } yield retrieved
+
+        program.asserting(_ shouldBe 1)
+      }
+    }
+
+    "should delete an existing job" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs            <- LiveJobs[IO](xa)
+          nbOfDeletedJobs <- jobs.delete(TestJobUuid)
+          countOfJobs     <- sql"SELECT COUNT(*) FROM jobs WHERE id = $TestJobUuid".query[Int].unique.transact(xa)
+        } yield (nbOfDeletedJobs, countOfJobs)
+
+        program.asserting { case (nbOfDeletedJobs, countOfJobs) =>
+          nbOfDeletedJobs shouldBe 1
+          countOfJobs shouldBe 0
+        }
+      }
+    }
+
+    "should return 0 deleted jobs when trying to delete a non-existent job" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          nbOfDeletedJobs <- jobs.delete(NotFoundJobUuid)
+        } yield nbOfDeletedJobs
+
+        program.asserting(_ shouldBe 0)
+      }
+    }
+  }
+}
