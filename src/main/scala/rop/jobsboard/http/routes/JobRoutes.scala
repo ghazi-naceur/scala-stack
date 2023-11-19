@@ -10,25 +10,30 @@ import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
 import org.typelevel.log4cats.Logger
+
 import scala.collection.mutable
 import java.util.UUID
 import rop.jobsboard.domain.Job.*
 import rop.jobsboard.http.responses.*
 import rop.jobsboard.core.*
+import rop.jobsboard.domain.pagination.Pagination
 import rop.jobsboard.http.validation.syntax.*
 
 class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
 
-  // database
+  object OffsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
+  object LimitQueryParam  extends OptionalQueryParamDecoderMatcher[Int]("limit")
 
   // REST endpoints
-  // http POST '/jobs?offset=x&limit=y { filters }' // todo add query params and filters
+  // http POST '/jobs?limit=x&offset=y { filters }'
   // http post localhost:4041/api/jobs
-  private val allJobsRoute: HttpRoutes[F] = HttpRoutes.of[F] { case POST -> Root =>
-    for {
-      jobsList <- jobs.all()
-      response <- Ok(jobsList)
-    } yield response
+  private val allJobsRoute: HttpRoutes[F] = HttpRoutes.of[F] {
+    case req @ POST -> Root :? LimitQueryParam(limit) +& OffsetQueryParam(offset) =>
+      for {
+        filter   <- req.as[JobFilter]
+        jobsList <- jobs.all(filter, Pagination(limit, offset))
+        response <- Ok(jobsList)
+      } yield response
   }
 
   // http GET '/jobs/uuid'
