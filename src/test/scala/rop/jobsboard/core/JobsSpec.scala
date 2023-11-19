@@ -7,11 +7,17 @@ import doobie.postgres.implicits.*
 import cats.effect.testing.scalatest.AsyncIOSpec
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import rop.jobsboard.domain.Job.JobFilter
+import rop.jobsboard.domain.pagination.Pagination
 import rop.jobsboard.fixature.JobFixture
 
 class JobsSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with DoobieSpec with JobFixture {
 
   override val initScript: String = "sql/jobs.sql"
+
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   "Jobs 'algebra'" - {
     "should return no job if the given UUID does not exist" in {
@@ -123,11 +129,33 @@ class JobsSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with DoobieS
     "should return 0 deleted jobs when trying to delete a non-existent job" in {
       transactor.use { xa =>
         val program = for {
-          jobs      <- LiveJobs[IO](xa)
+          jobs            <- LiveJobs[IO](xa)
           nbOfDeletedJobs <- jobs.delete(NotFoundJobUuid)
         } yield nbOfDeletedJobs
 
         program.asserting(_ shouldBe 0)
+      }
+    }
+
+    "should filter remote jobs" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs <- LiveJobs[IO](xa)
+          jobs <- jobs.all(JobFilter(remote = true), Pagination.default)
+        } yield jobs
+
+        program.asserting(_ shouldBe List())
+      }
+    }
+
+    "should filter jobs by tags" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs <- LiveJobs[IO](xa)
+          jobs <- jobs.all(JobFilter(tags = List("scala", "cats", "not-found")), Pagination.default)
+        } yield jobs
+
+        program.asserting(_ shouldBe List(TestJob))
       }
     }
   }

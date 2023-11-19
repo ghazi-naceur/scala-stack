@@ -17,7 +17,7 @@ import java.util.UUID
 trait Jobs[F[_]] {
 
   def create(ownerEmail: String, jobInfo: JobInfo): F[UUID]
-  def all(): F[List[Job]]
+  def all(): F[List[Job]] // todo to be improved
   def all(filter: JobFilter, pagination: Pagination): F[List[Job]]
   def find(id: UUID): F[Option[Job]]
   def update(id: UUID, jobInfo: JobInfo): F[Option[Job]]

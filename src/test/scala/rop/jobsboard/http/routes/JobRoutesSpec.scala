@@ -3,13 +3,12 @@ package rop.jobsboard.http.routes
 // These 2 imports should placed before the http4s imports
 import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
-
+//
 import cats.effect.*
 import cats.implicits.*
 import org.http4s.*
 import org.http4s.implicits.*
 import org.http4s.dsl.*
-
 import cats.effect.testing.scalatest.AsyncIOSpec
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -19,6 +18,7 @@ import rop.jobsboard.fixature.JobFixture
 import rop.jobsboard.core.Jobs
 import rop.jobsboard.domain.Job.*
 import org.scalatest.freespec.*
+import rop.jobsboard.domain.pagination.Pagination
 
 import java.util.UUID
 class JobRoutesSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with Http4sDsl[IO] with JobFixture {
@@ -27,6 +27,10 @@ class JobRoutesSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with Ht
     override def create(ownerEmail: String, jobInfo: JobInfo): IO[UUID] = IO.pure(NewJobUuid)
 
     override def all(): IO[List[Job]] = IO.pure(List(TestJob))
+
+    override def all(filter: JobFilter, pagination: Pagination): IO[List[Job]] =
+      if (filter.remote) IO.pure(List())
+      else IO.pure(List(TestJob))
 
     override def find(id: UUID): IO[Option[Job]] =
       if (id == TestJobUuid) IO.pure(Some(TestJob))
@@ -67,11 +71,26 @@ class JobRoutesSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with Ht
         // simulate an HTTP request
         response <- jobRoutes.orNotFound.run(
           Request(method = Method.POST, uri = uri"/jobs")
+            .withEntity(JobFilter()) // empty filter
         )
         retrieved <- response.as[List[Job]]
       } yield {
         response.status shouldBe Status.Ok
         retrieved shouldBe List(TestJob)
+      }
+    }
+
+    "should return all jobs that satisfy a certain filter" in {
+      for {
+        // simulate an HTTP request
+        response <- jobRoutes.orNotFound.run(
+          Request(method = Method.POST, uri = uri"/jobs")
+            .withEntity(JobFilter(remote = true))
+        )
+        retrieved <- response.as[List[Job]]
+      } yield {
+        response.status shouldBe Status.Ok
+        retrieved shouldBe List()
       }
     }
 
