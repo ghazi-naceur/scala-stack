@@ -17,7 +17,7 @@ trait UserFixture {
 
   val Person: User = User(
     "someone@gmail.com",
-    "somepassowrd",
+    "$2a$10$uxXr1sHrOnK3bZ2La3cQueLt6gWqxPSnEQErtACifH5PsiKZODgQm",
     Some("Someone"),
     Some("His lastname"),
     Some("Corp"),
