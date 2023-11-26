@@ -17,18 +17,18 @@ trait UserFixture {
 
   val Person: User = User(
     "someone@gmail.com",
-    "$2a$10$uxXr1sHrOnK3bZ2La3cQueLt6gWqxPSnEQErtACifH5PsiKZODgQm",
+    "$2a$10$uxXr1sHrOnK3bZ2La3cQueLt6gWqxPSnEQErtACifH5PsiKZODgQm", // == somepassword
     Some("Someone"),
     Some("His lastname"),
     Some("Corp"),
     Role.ADMIN
   )
   val userEmail: String = Person.email
-  val somePassword      = "secretpassword"
+  val somePassword      = "somepassword"
 
   val AnotherUser: User = User(
     "another@gmail.com",
-    "anotherpassword",
+    "$2a$10$6jl0rnj3uU8/.p97cUYPqu8idZRlD7ijuidQnb3K6ML/0cPaUAxoq", // == anotherpassword
     Some("Another"),
     Some("Lastname"),
     Some("Corp 2"),
@@ -39,7 +39,7 @@ trait UserFixture {
 
   val NewUser: User = User(
     "newuser@gmail.com",
-    "simplepassword",
+    "$2a$10$nQy.OgvzMdkhdyXQA8mKa.BFw2SNaU7j287CAfbU1wIO0XzW7dgPq", // == simplepassword
     Some("John"),
     Some("Doe"),
     Some("Some company"),
@@ -48,7 +48,7 @@ trait UserFixture {
 
   val UpdatedUser: User = User(
     "someone@gmail.com",
-    "$2a$10$PUD6CznGVHntJFsOOeV4NezBgBUs6irV3sC9fa6ufc0xp9VLYyHZ.",
+    "$2a$10$mtFeYR3wCMp5n0BsK.LdXulT2KA/wpfFxH0r4gskzvkqvdofSW4XC", // == updatedpassword
     Some("User"),
     Some("His lastname"),
     Some("Adobe"),

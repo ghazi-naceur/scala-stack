@@ -19,7 +19,7 @@ INSERT INTO users(
     role
 ) VALUES (
     'someone@gmail.com',
-    'somepassowrd',
+    '$2a$10$uxXr1sHrOnK3bZ2La3cQueLt6gWqxPSnEQErtACifH5PsiKZODgQm',
     'Someone',
     'His lastname',
     'Corp',
@@ -35,7 +35,7 @@ INSERT INTO users(
     role
 ) VALUES (
     'another@gmail.com',
-    'anotherpassword',
+    '$2a$10$6jl0rnj3uU8/.p97cUYPqu8idZRlD7ijuidQnb3K6ML/0cPaUAxoq',
     'Another',
     'Lastname',
     'Corp 2',
