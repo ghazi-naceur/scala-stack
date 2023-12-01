@@ -26,7 +26,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
 
   private val mockedUsers: Users[IO] = new Users[IO] {
     override def find(email: String): IO[Option[User]] =
-      if (email == userEmail) IO.pure(Some(Person))
+      if (email == someEmail) IO.pure(Some(Person))
       else IO.pure(None)
 
     override def create(user: User): IO[String] = IO.pure(user.email)
@@ -42,7 +42,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
 
     // identity store for retrieving users (in-memory map to find a user by key)
     val idStore: IdentityStore[IO, String, User] = { (email: String) =>
-      if (email == userEmail) OptionT.pure(Person)
+      if (email == someEmail) OptionT.pure(Person)
       else if (email == anotherUserEmail) OptionT.pure(AnotherUser)
       else OptionT.none[IO, User]
     }
@@ -68,7 +68,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
     "login should return None if the user exists but the password is wrong" in {
       val program = for {
         auth           <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
-        potentialToken <- auth.login(userEmail, "wrong_password")
+        potentialToken <- auth.login(someEmail, "wrong_password")
       } yield potentialToken
 
       program.asserting(_ shouldBe None)
@@ -77,7 +77,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
     "login should return a token if the user exists and the password is correct" in {
       val program = for {
         auth           <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
-        potentialToken <- auth.login(userEmail, "somepassword")
+        potentialToken <- auth.login(someEmail, "somepassword")
       } yield potentialToken
 
       program.asserting(_ shouldBe defined)
@@ -87,7 +87,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
       val program = for {
         auth <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
         potentialUser <- auth.signup(
-          NewUserInfo(userEmail, "someotherpassword", Some("firstname"), Some("lastname"), Some("Corp"))
+          NewUserInfo(someEmail, "someotherpassword", Some("firstname"), Some("lastname"), Some("Corp"))
         )
       } yield potentialUser
 
@@ -125,7 +125,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
     "change_password should return an error if the user exists but the password is incorrect" in {
       val program = for {
         auth          <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
-        potentialUser <- auth.changePassword(userEmail, NewPasswordInfo("old-password", "new-password"))
+        potentialUser <- auth.changePassword(someEmail, NewPasswordInfo("old-password", "new-password"))
       } yield potentialUser
 
       program.asserting(_ shouldBe Left("Invalid password"))
@@ -134,7 +134,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
     "change_password should correctly change password if all details are correct" in {
       val program = for {
         auth          <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
-        potentialUser <- auth.changePassword(userEmail, NewPasswordInfo("somepassword", "new-password"))
+        potentialUser <- auth.changePassword(someEmail, NewPasswordInfo("somepassword", "new-password"))
         isNicePassword <- potentialUser match
           case Right(Some(user)) => BCrypt.checkpwBool[IO]("somepassword", PasswordHash[BCrypt](Person.hashedPassword))
           case _                 => IO.pure(false)

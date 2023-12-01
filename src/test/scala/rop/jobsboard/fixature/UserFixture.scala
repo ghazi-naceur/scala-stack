@@ -2,13 +2,13 @@ package rop.jobsboard.fixature
 
 import cats.effect.IO
 import rop.jobsboard.core.Users
-import rop.jobsboard.domain.user.{Role, User}
+import rop.jobsboard.domain.user.{NewUserInfo, Role, User}
 
 trait UserFixture {
 
   val mockedUsers: Users[IO] = new Users[IO] {
     override def find(email: String): IO[Option[User]] =
-      if (email == userEmail) IO.pure(Some(Person))
+      if (email == someEmail) IO.pure(Some(Person))
       else IO.pure(None)
     override def create(user: User): IO[String]       = IO.pure(user.email)
     override def update(user: User): IO[Option[User]] = IO.pure(Some(user))
@@ -23,7 +23,7 @@ trait UserFixture {
     Some("Corp"),
     Role.ADMIN
   )
-  val userEmail: String = Person.email
+  val someEmail: String = Person.email
   val somePassword      = "somepassword"
 
   val AnotherUser: User = User(
@@ -35,7 +35,23 @@ trait UserFixture {
     Role.RECRUITER
   )
   val anotherUserEmail: String = AnotherUser.email
-  val anotherUserPassword      = "someoneelsepassword"
+  val anotherUserPassword      = "anotherpassword"
+
+  val PersonInfo: NewUserInfo = NewUserInfo(
+    Person.email,
+    somePassword,
+    Person.firstName,
+    Person.lastName,
+    Person.company
+  )
+
+  val AnotherUserInfo: NewUserInfo = NewUserInfo(
+    AnotherUser.email,
+    anotherUserPassword,
+    AnotherUser.firstName,
+    AnotherUser.lastName,
+    AnotherUser.company
+  )
 
   val NewUser: User = User(
     "newuser@gmail.com",
