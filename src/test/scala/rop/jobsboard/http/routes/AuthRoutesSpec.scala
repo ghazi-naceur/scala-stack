@@ -18,7 +18,7 @@ import tsec.mac.jca.HMACSHA256
 
 import scala.language.postfixOps
 import scala.concurrent.duration.*
-//
+
 import cats.effect.*
 import cats.implicits.*
 import org.http4s.*
@@ -33,14 +33,26 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 class AuthRoutesSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with Http4sDsl[IO] with UserFixture {
 
-  // todo make sure that only 'Person' from UserFixture already exists
-
   val mockedAuth: Auth[IO] = new Auth[IO] {
-    override def login(email: String, password: String): IO[Option[JwtToken]] = ???
+    override def login(email: String, password: String): IO[Option[JwtToken]] =
+      if (email == someEmail && password == somePassword)
+        mockedAuthenticator.create(someEmail).map(Some(_))
+      else IO.pure(None)
 
-    override def signup(newUserInfo: user.NewUserInfo): IO[Option[user.User]] = ???
+    override def signup(newUserInfo: user.NewUserInfo): IO[Option[user.User]] =
+      if (newUserInfo.email == anotherUserEmail)
+        IO.pure(Some(AnotherUser))
+      else IO.pure(None)
 
-    override def changePassword(email: String, newPasswordInfo: auth.NewPasswordInfo): IO[Either[String, Option[user.User]]] = ???
+    override def changePassword(email: String, newPasswordInfo: auth.NewPasswordInfo): IO[Either[String, Option[user.User]]] =
+      if (email == someEmail)
+        if (newPasswordInfo.oldPassword == somePassword)
+          IO.pure(Right(Some(Person)))
+        else
+          IO.pure(Left("Invalid password"))
+      else IO.pure(Right(None))
+
+    override def authenticator: Authenticator[IO] = mockedAuthenticator
   }
 
   val mockedAuthenticator: Authenticator[IO] = {
@@ -194,7 +206,7 @@ class AuthRoutesSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with H
               .withEntity(NewPasswordInfo(somePassword, "new-password"))
           )
       } yield {
-        response.status shouldBe Status.Unauthorized
+        response.status shouldBe Status.Ok
       }
     }
   }
