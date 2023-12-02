@@ -23,28 +23,30 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
 
   // POST /auth/login { loginInfo } => 200 OK with JWT as Authorization: Bearer {jwt}
   private val loginRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "login" =>
-    val potentialJwtToken = for {
-      loginInfo      <- req.as[LoginInfo]
-      potentialToken <- auth.login(loginInfo.email, loginInfo.password)
-      _              <- Logger[F].info(s"User logging in: ${loginInfo.email}")
-    } yield potentialToken
+    req.validate[LoginInfo] { loginInfo =>
+      val potentialJwtToken = for {
+        potentialToken <- auth.login(loginInfo.email, loginInfo.password)
+        _              <- Logger[F].info(s"User logging in: ${loginInfo.email}")
+      } yield potentialToken
 
-    potentialJwtToken.map {
-      case Some(jwtToken) => authenticator.embed(Response(Status.Ok), jwtToken) // Authorization: Bearer token
-      case None           => Response(Status.Unauthorized)
+      potentialJwtToken.map {
+        case Some(jwtToken) => authenticator.embed(Response(Status.Ok), jwtToken) // Authorization: Bearer token
+        case None           => Response(Status.Unauthorized)
+      }
     }
   }
 
   // POST /auth/users { NewUserInfo } => 201 Created or BadRequest
   private val createUserRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "users" =>
-    for {
-      newUserInfo      <- req.as[NewUserInfo]
-      potentialNewUser <- auth.signup(newUserInfo)
-      response <- potentialNewUser match {
-        case Some(user) => Created(user.email)
-        case None       => BadRequest(s"User with '${newUserInfo.email}' already exists")
-      }
-    } yield response
+    req.validate[NewUserInfo] { newUserInfo =>
+      for {
+        potentialNewUser <- auth.signup(newUserInfo)
+        response <- potentialNewUser match {
+          case Some(user) => Created(user.email)
+          case None       => BadRequest(s"User with '${newUserInfo.email}' already exists")
+        }
+      } yield response
+    }
   }
 
   // PUT /auth/users/password { NewPasswordInfo } { Authorization: Bearer {jwt} } => 200 OK
@@ -52,14 +54,15 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
     // 'asAuthed' is an object that has an 'unapply' method that takes a 'SecuredRequest'
     // as a wrapped of a regular http request and it will give us back a 'Request' (from Http4s) with an identifier, and in
     // our case the identifier will be the email by which that particular user tries to authenticate through the JWT
-    for {
-      newPasswordInfo <- req.request.as[NewPasswordInfo]
-      potentialUser   <- auth.changePassword(user.email, newPasswordInfo)
-      response <- potentialUser match
-        case Right(Some(_)) => Ok()
-        case Right(None)    => NotFound(FailureResponse(s"User ${user.email} was not found"))
-        case Left(error)    => Forbidden()
-    } yield response
+    req.request.validate[NewPasswordInfo] { newPasswordInfo =>
+      for {
+        potentialUser <- auth.changePassword(user.email, newPasswordInfo)
+        response <- potentialUser match
+          case Right(Some(_)) => Ok()
+          case Right(None)    => NotFound(FailureResponse(s"User ${user.email} was not found"))
+          case Left(error)    => Forbidden()
+      } yield response
+    }
   }
 
   // POST /auth/logout { Authorization: Bearer {jwt} } => 200 OK
