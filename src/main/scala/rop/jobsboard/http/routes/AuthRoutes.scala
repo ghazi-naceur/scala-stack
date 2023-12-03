@@ -10,12 +10,12 @@ import org.http4s.server.Router
 import org.typelevel.log4cats.Logger
 import rop.jobsboard.core.*
 import rop.jobsboard.domain.auth.{LoginInfo, NewPasswordInfo}
-import rop.jobsboard.domain.security.{AuthRoute, JwtToken}
+import rop.jobsboard.domain.security.*
 import rop.jobsboard.domain.user.{NewUserInfo, User}
 import rop.jobsboard.http.responses.FailureResponse
 import rop.jobsboard.http.validation.syntax.*
 import tsec.authentication.{SecuredRequestHandler, TSecAuthService, asAuthed}
-
+import scala.language.implicitConversions
 class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpValidationDsl[F] {
 
   private val authenticator                                                    = auth.authenticator
@@ -75,9 +75,19 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
     } yield response
   }
 
+  // DELETE /auth/users/"email"
+  private val deleteUserRoute: AuthRoute[F] = { case req @ DELETE -> Root / "users" / email asAuthed _ =>
+    auth.delete(email).flatMap {
+      case true  => Ok()
+      case false => NotFound()
+    }
+  }
+
   val unauthedRoutes: HttpRoutes[F] = loginRoute <+> createUserRoute
   val authedRoutes: HttpRoutes[F] = securedHandler.liftService(
-    TSecAuthService(changePasswordRoute.orElse(logoutRoute))
+    changePasswordRoute.restrictedTo(allRoles) |+|
+      logoutRoute.restrictedTo(allRoles) |+|
+      deleteUserRoute.restrictedTo(adminOnly)
   )
 
   val routes: HttpRoutes[F] = Router(
