@@ -16,6 +16,7 @@ import rop.jobsboard.http.responses.FailureResponse
 import rop.jobsboard.http.validation.syntax.*
 import tsec.authentication.{SecuredRequestHandler, TSecAuthService, asAuthed}
 import scala.language.implicitConversions
+
 class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpValidationDsl[F] {
 
   private val authenticator                                                    = auth.authenticator

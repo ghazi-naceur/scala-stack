@@ -8,15 +8,16 @@ import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
 import org.typelevel.log4cats.Logger
-import rop.jobsboard.http.routes.{HealthRoutes, JobRoutes}
+import rop.jobsboard.http.routes.{AuthRoutes, HealthRoutes, JobRoutes}
 
 class HttpApi[F[_]: Concurrent: Logger] private (core: Core[F]) {
 
   private val healthRoutes = HealthRoutes[F].routes
   private val jobRoutes    = JobRoutes[F](core.jobs).routes
+  private val authRoutes   = AuthRoutes[F](core.auth).routes
 
   val endpoints: HttpRoutes[F] = Router(
-    "/api" -> (healthRoutes <+> jobRoutes)
+    "/api" -> (healthRoutes <+> jobRoutes <+> authRoutes)
   )
 }
 
