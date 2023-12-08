@@ -1,0 +1,37 @@
+
+1- DB commands:
+docker exec -it scala-stack_db_1 psql -U docker
+\c board;
+\dt
+select * from jobs;
+select * from users;
+
+
+2- Tacking the backend for a spin:
+    a- Create a new user:
+http post localhost:4041/api/auth/users email='netero@gmail.com' password='neterothehunter'
+    b- Login:
+http post localhost:4041/api/auth/login email='netero@gmail.com' password='neterothehunter'
+  => Result:
+  Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMTU3MDIsImlhdCI6MTcwMjAyOTMwMiwianRpIjoiNTA4ODAxYTk0YWNjMGNkYTdjOGMwMDAwMTdhM2U5NTkifQ.xh1AVkRRykclEieFunQWvQ_ufi332Ft7oRkkxEOgaWU
+    c- Change password:
+http put localhost:4041/api/auth/users/password oldPassword='neterothehunter' newPassword='isaacthehunter' 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMTU3MDIsImlhdCI6MTcwMjAyOTMwMiwianRpIjoiNTA4ODAxYTk0YWNjMGNkYTdjOGMwMDAwMTdhM2U5NTkifQ.xh1AVkRRykclEieFunQWvQ_ufi332Ft7oRkkxEOgaWU'
+    d- Trying to login with an old password:
+http post localhost:4041/api/auth/login email='netero@gmail.com' password='neterothehunter'
+  => Result: 401 Unauthorized
+    e- Trying to login with the new password:
+http post localhost:4041/api/auth/login email='netero@gmail.com' password='isaacthehunter'
+  => Result:
+  Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMTk4NjcsImlhdCI6MTcwMjAzMzQ2NywianRpIjoiYTBhYjg0MzhiYTAyNDFmMGE5YmUwYTQxZTYyYWE4YTgifQ.XH-pLZWdXtJU-reHy_8vHW__th7i_ulUHodcH0TWsJ8
+    f- Logout:
+http post localhost:4041/api/auth/logout 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMTk4NjcsImlhdCI6MTcwMjAzMzQ2NywianRpIjoiYTBhYjg0MzhiYTAyNDFmMGE5YmUwYTQxZTYyYWE4YTgifQ.XH-pLZWdXtJU-reHy_8vHW__th7i_ulUHodcH0TWsJ8'
+    g- Trying to change password after logout:
+http put localhost:4041/api/auth/users/password oldPassword='isaacthehunter' newPassword='isaacnetero' 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMTk4NjcsImlhdCI6MTcwMjAzMzQ2NywianRpIjoiYTBhYjg0MzhiYTAyNDFmMGE5YmUwYTQxZTYyYWE4YTgifQ.XH-pLZWdXtJU-reHy_8vHW__th7i_ulUHodcH0TWsJ8'
+  => Result: 401 Unauthorized
+    h- Login:
+http post localhost:4041/api/auth/login email='netero@gmail.com' password='isaacthehunter'
+  Result =>
+  Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMjAyNTIsImlhdCI6MTcwMjAzMzg1MiwianRpIjoiZDg5Njg0NzI4NWVkMjE3ZGEwMzA4MGJjZGQwNGM1NDYifQ.KFnNmxVxgE-3s_2IAckZzOkBTwNFr2e-HdFS76Q_hKw
+    i- Delete user:
+http delete localhost:4041/api/auth/users/netero@gmail.com 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMjAyNTIsImlhdCI6MTcwMjAzMzg1MiwianRpIjoiZDg5Njg0NzI4NWVkMjE3ZGEwMzA4MGJjZGQwNGM1NDYifQ.KFnNmxVxgE-3s_2IAckZzOkBTwNFr2e-HdFS76Q_hKw'
+  Result: 401 Unauthorized (because only users with ADMIN role have the right to delete users)
