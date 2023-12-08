@@ -40,9 +40,8 @@ class AuthRoutesSpec
     with SecuredRouteFixture {
 
   val mockedAuth: Auth[IO] = new Auth[IO] {
-    override def login(email: String, password: String): IO[Option[JwtToken]] =
-      if (email == someEmail && password == somePassword)
-        mockedAuthenticator.create(someEmail).map(Some(_))
+    override def login(email: String, password: String): IO[Option[User]] =
+      if (email == someEmail && password == somePassword) IO(Some(Person))
       else IO.pure(None)
 
     override def signup(newUserInfo: user.NewUserInfo): IO[Option[user.User]] =
@@ -60,13 +59,11 @@ class AuthRoutesSpec
 
     override def delete(email: String): IO[Boolean] =
       IO.pure(true)
-
-    override def authenticator: Authenticator[IO] = mockedAuthenticator
   }
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  val authRoutes: HttpRoutes[IO] = AuthRoutes[IO](mockedAuth).routes
+  val authRoutes: HttpRoutes[IO] = AuthRoutes[IO](mockedAuth, mockedAuthenticator).routes
 
   "AuthRoutes" - {
     "should return a 401 - unauthorized if login fails" in {

@@ -17,17 +17,16 @@ import rop.jobsboard.http.validation.syntax.*
 import tsec.authentication.{SecuredRequestHandler, TSecAuthService, asAuthed}
 import scala.language.implicitConversions
 
-class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpValidationDsl[F] {
-
-  private val authenticator                     = auth.authenticator
-  private val securedHandler: SecuredHandler[F] = SecuredRequestHandler(authenticator)
+class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (auth: Auth[F], authenticator: Authenticator[F])
+    extends HttpValidationDsl[F] {
 
   // POST /auth/login { loginInfo } => 200 OK with JWT as Authorization: Bearer {jwt}
   private val loginRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "login" =>
     req.validate[LoginInfo] { loginInfo =>
       val potentialJwtToken = for {
-        potentialToken <- auth.login(loginInfo.email, loginInfo.password)
+        potentialUser  <- auth.login(loginInfo.email, loginInfo.password)
         _              <- Logger[F].info(s"User logging in: ${loginInfo.email}")
+        potentialToken <- potentialUser.traverse(user => authenticator.create(user.email))
       } yield potentialToken
 
       potentialJwtToken.map {
@@ -85,7 +84,7 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
   }
 
   val unauthedRoutes: HttpRoutes[F] = loginRoute <+> createUserRoute
-  val authedRoutes: HttpRoutes[F] = securedHandler.liftService(
+  val authedRoutes: HttpRoutes[F] = SecuredHandler[F].liftService(
     changePasswordRoute.restrictedTo(allRoles) |+|
       logoutRoute.restrictedTo(allRoles) |+|
       deleteUserRoute.restrictedTo(adminOnly)
@@ -97,5 +96,6 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
 }
 
 object AuthRoutes {
-  def apply[F[_]: Concurrent: Logger](auth: Auth[F]) = new AuthRoutes[F](auth)
+  def apply[F[_]: Concurrent: Logger: SecuredHandler](auth: Auth[F], authenticator: Authenticator[F]) =
+    new AuthRoutes[F](auth, authenticator)
 }

@@ -5,7 +5,7 @@ import cats.data.*
 import cats.implicits.*
 import org.http4s.{AuthScheme, Credentials, Request}
 import org.http4s.headers.Authorization
-import tsec.authentication.{IdentityStore, JWTAuthenticator}
+import tsec.authentication.{IdentityStore, JWTAuthenticator, SecuredRequestHandler}
 import tsec.jws.mac.JWTMac
 import tsec.mac.jca.HMACSHA256
 
@@ -44,4 +44,5 @@ trait SecuredRouteFixture extends UserFixture {
         Authorization(Credentials.Token(AuthScheme.Bearer, jwtString))
       }
 
+  given securedHandler: SecuredHandler[IO] = SecuredRequestHandler(mockedAuthenticator)
 }
