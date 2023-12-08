@@ -1,6 +1,7 @@
 package rop.jobsboard.domain
 
 import doobie.util.meta.Meta
+import rop.jobsboard.domain.Job.Job
 import tsec.authorization.{AuthGroup, SimpleAuthEnum}
 
 object user {
@@ -12,7 +13,16 @@ object user {
       lastName: Option[String],
       company: Option[String],
       role: Role
-  )
+  ) {
+    def owns(job: Job): Boolean =
+      email == job.ownerEmail
+
+    def isAdmin: Boolean =
+      role == Role.ADMIN
+
+    def isRecruiter: Boolean =
+      role == Role.RECRUITER
+  }
 
   case class NewUserInfo(
       email: String,

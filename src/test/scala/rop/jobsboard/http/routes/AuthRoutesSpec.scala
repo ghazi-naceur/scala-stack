@@ -31,7 +31,13 @@ import org.scalatest.freespec.*
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-class AuthRoutesSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with Http4sDsl[IO] with UserFixture {
+class AuthRoutesSpec
+    extends AsyncFreeSpec
+    with AsyncIOSpec
+    with Matchers
+    with Http4sDsl[IO]
+    with UserFixture
+    with SecuredRouteFixture {
 
   val mockedAuth: Auth[IO] = new Auth[IO] {
     override def login(email: String, password: String): IO[Option[JwtToken]] =
@@ -57,33 +63,6 @@ class AuthRoutesSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with H
 
     override def authenticator: Authenticator[IO] = mockedAuthenticator
   }
-
-  val mockedAuthenticator: Authenticator[IO] = {
-    // key for hashing
-    val key = HMACSHA256.unsafeGenerateKey
-
-    // identity store for retrieving users (in-memory map to find a user by key)
-    val idStore: IdentityStore[IO, String, User] = { (email: String) =>
-      if (email == someEmail) OptionT.pure(Person)
-      else if (email == anotherUserEmail) OptionT.pure(AnotherUser)
-      else OptionT.none[IO, User]
-    }
-    // jwt authenticator
-    JWTAuthenticator.unbacked.inBearerToken(
-      1 day,   // expiration of tokens
-      None,    // max idle time (optional)
-      idStore, // identity store
-      key      // hash key
-    )
-  }
-
-  extension (r: Request[IO])
-    def withBearerToken(jwtToken: JwtToken): Request[IO] =
-      r.putHeaders {
-        val jwtString = JWTMac.toEncodedString[IO, HMACSHA256](jwtToken.jwt)
-        // Authorization: Bearer {jwtString}
-        Authorization(Credentials.Token(AuthScheme.Bearer, jwtString))
-      }
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 

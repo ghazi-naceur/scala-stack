@@ -4,17 +4,18 @@ import cats.*
 import cats.implicits.*
 import org.http4s.{Response, Status}
 import rop.jobsboard.domain.user.*
-import tsec.authentication.{AugmentedJWT, JWTAuthenticator, SecuredRequest, TSecAuthService}
+import tsec.authentication.{AugmentedJWT, JWTAuthenticator, SecuredRequest, SecuredRequestHandler, TSecAuthService}
 import tsec.authorization.{AuthorizationInfo, BasicRBAC}
 import tsec.mac.jca.HMACSHA256
 
 // internal to the server
 object security {
-  type Crypto              = HMACSHA256
-  type JwtToken            = AugmentedJWT[Crypto, String]
-  type Authenticator[F[_]] = JWTAuthenticator[F, String, User, Crypto]
-  type AuthRoute[F[_]]     = PartialFunction[SecuredRequest[F, User, JwtToken], F[Response[F]]]
-  type AuthRBAC[F[_]]      = BasicRBAC[F, Role, User, JwtToken]
+  type Crypto               = HMACSHA256
+  type JwtToken             = AugmentedJWT[Crypto, String]
+  type Authenticator[F[_]]  = JWTAuthenticator[F, String, User, Crypto]
+  type AuthRoute[F[_]]      = PartialFunction[SecuredRequest[F, User, JwtToken], F[Response[F]]]
+  type AuthRBAC[F[_]]       = BasicRBAC[F, Role, User, JwtToken]
+  type SecuredHandler[F[_]] = SecuredRequestHandler[F, String, User, JwtToken]
 
   // Role Based Access Control - RBAC
   // BasicRBAC[F, Role, User, JwtToken]
