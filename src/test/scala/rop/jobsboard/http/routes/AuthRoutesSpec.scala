@@ -11,14 +11,13 @@ import rop.jobsboard.domain.auth.{LoginInfo, NewPasswordInfo}
 import rop.jobsboard.domain.security.{Authenticator, JwtToken}
 import rop.jobsboard.domain.user.{NewUserInfo, User}
 import rop.jobsboard.domain.{auth, user}
-import rop.jobsboard.fixature.UserFixture
+import rop.jobsboard.fixature.{SecuredRouteFixture, UserFixture}
 import tsec.authentication.{IdentityStore, JWTAuthenticator}
 import tsec.jws.mac.JWTMac
 import tsec.mac.jca.HMACSHA256
 
 import scala.language.postfixOps
 import scala.concurrent.duration.*
-
 import cats.effect.*
 import cats.implicits.*
 import org.http4s.*

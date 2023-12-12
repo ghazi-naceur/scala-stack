@@ -1,19 +1,19 @@
-package rop.jobsboard.http.routes
+package rop.jobsboard.fixature
 
-import cats.effect.*
 import cats.data.*
+import cats.effect.*
 import cats.implicits.*
-import org.http4s.{AuthScheme, Credentials, Request}
 import org.http4s.headers.Authorization
+import org.http4s.{AuthScheme, Credentials, Request}
+import rop.jobsboard.domain.security.*
+import rop.jobsboard.domain.user.*
+import rop.jobsboard.fixature.UserFixture
 import tsec.authentication.{IdentityStore, JWTAuthenticator, SecuredRequestHandler}
 import tsec.jws.mac.JWTMac
 import tsec.mac.jca.HMACSHA256
 
-import scala.language.postfixOps
 import scala.concurrent.duration.*
-import rop.jobsboard.fixature.UserFixture
-import rop.jobsboard.domain.user.*
-import rop.jobsboard.domain.security.*
+import scala.language.postfixOps
 
 trait SecuredRouteFixture extends UserFixture {
 

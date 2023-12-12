@@ -3,6 +3,7 @@ package rop.jobsboard.http.routes
 // These 2 imports should placed before the http4s imports
 import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
+import rop.jobsboard.fixature.SecuredRouteFixture
 //
 import cats.effect.*
 import cats.implicits.*

@@ -25,18 +25,6 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  private val mockedUsers: Users[IO] = new Users[IO] {
-    override def find(email: String): IO[Option[User]] =
-      if (email == someEmail) IO.pure(Some(Person))
-      else IO.pure(None)
-
-    override def create(user: User): IO[String] = IO.pure(user.email)
-
-    override def update(user: User): IO[Option[User]] = IO.pure(Some(user))
-
-    override def delete(email: String): IO[Boolean] = IO.pure(true)
-  }
-
   val securityConfig: SecurityConfig = SecurityConfig("secret", 1 day)
 
   "Auth 'algebra'" - {
