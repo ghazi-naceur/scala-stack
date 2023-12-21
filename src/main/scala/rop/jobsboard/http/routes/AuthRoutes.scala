@@ -65,6 +65,16 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (auth: Auth[F
     }
   }
 
+  // POST /auth/reset { ForgotPasswordInfo }
+  private val forgotPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "reset" =>
+    Ok("todo")
+  }
+
+  // POST /auth/recover { RecoverPasswordInfo }
+  private val recoverPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "recover" =>
+    Ok("todo")
+  }
+
   // POST /auth/logout { Authorization: Bearer {jwt} } => 200 OK
   // this route will be wrapped in 'TSecAuthService' which will return 'Unauthorized' when having an invalid token
   private val logoutRoute: AuthRoute[F] = { case req @ POST -> Root / "logout" asAuthed _ =>

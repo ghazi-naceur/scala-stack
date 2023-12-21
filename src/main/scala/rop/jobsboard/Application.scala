@@ -31,10 +31,10 @@ object Application extends IOApp.Simple {
   override def run: IO[Unit] = {
     ConfigSource.default
       .loadF[IO, AppConfig]
-      .flatMap { case AppConfig(postgresConfig, emberConfig, securityConfig) =>
+      .flatMap { case AppConfig(postgresConfig, emberConfig, securityConfig, tokenConfig, emailServiceConfig) =>
         val appResource = for {
           xa      <- Database.makePostgresResource[IO](postgresConfig)
-          core    <- Core[IO](xa)
+          core    <- Core[IO](xa, tokenConfig, emailServiceConfig)
           httpApi <- HttpApi[IO](core, securityConfig)
           server <-
             EmberServerBuilder

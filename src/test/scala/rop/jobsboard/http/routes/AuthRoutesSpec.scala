@@ -58,6 +58,10 @@ class AuthRoutesSpec
 
     override def delete(email: String): IO[Boolean] =
       IO.pure(true)
+
+    override def sendPasswordRecoveryToken(from: String, to: String): IO[Unit] = ???
+
+    override def recoverPasswordFromToken(from: String, to: String, token: String, newPassword: String): IO[Boolean] = ???
   }
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
