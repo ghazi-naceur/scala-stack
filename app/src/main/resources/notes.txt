@@ -1,0 +1,13 @@
+
+sbt project server/compile
+sbt project server/clean compile test
+
+npm install
+npm run start // => this will can the `scripts.start` command from `package.json`
+sbt app/fastOptJS // to compile scala source to javascript, so we can use it in html files as JS functions
+    // Under 'app/target/scala-3.2.1', we will obtain 'app-fastopt.js' file. At the bottom of this file, we will find the
+    // JS version of our scala code, which returns a JS instance of the scala class
+npm run start
+
+> sbt
+> ~fastOptJS

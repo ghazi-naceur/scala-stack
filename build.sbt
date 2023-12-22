@@ -1,8 +1,54 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
 lazy val scala3Version = "3.2.1"
+lazy val rop           = "rop"
 
-lazy val circeVersion               = "0.14.0"
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Common - contains domain model
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+lazy val core = (crossProject(JSPlatform, JVMPlatform) in file("common"))
+  .settings(
+    name         := "common",
+    scalaVersion := scala3Version,
+    organization := rop
+  )
+  .jvmSettings(
+    // add here if necessary
+  )
+  .jsSettings(
+    // Add JS-specific settings here
+  )
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Frontend
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+lazy val tyrianVersion = "0.6.1"
+lazy val fs2DomVersion = "0.1.0"
+lazy val laikaVersion  = "0.19.0"
+lazy val circeVersion  = "0.14.0"
+
+lazy val app = (project in file("app"))
+  .enablePlugins(ScalaJSPlugin)
+  .settings(
+    name         := "app",
+    scalaVersion := scala3Version,
+    organization := rop,
+    libraryDependencies ++= Seq(
+      "io.indigoengine" %%% "tyrian-io"     % tyrianVersion,
+      "com.armanbilge"  %%% "fs2-dom"       % fs2DomVersion,
+      "org.planet42"    %%% "laika-core"    % laikaVersion,
+      "io.circe"        %%% "circe-core"    % circeVersion,
+      "io.circe"        %%% "circe-parser"  % circeVersion,
+      "io.circe"        %%% "circe-generic" % circeVersion
+    ),
+    scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
+    semanticdbEnabled := true,
+    autoAPIMappings   := true
+  )
+  .dependsOn(core.js)
+
 lazy val catsEffectVersion          = "3.3.14"
 lazy val http4sVersion              = "0.23.15"
 lazy val doobieVersion              = "1.0.0-RC1"
@@ -16,11 +62,11 @@ lazy val logbackVersion             = "1.4.0"
 lazy val slf4jVersion               = "2.0.0"
 lazy val javaMailVersion            = "1.6.2"
 
-lazy val server = (project in file("."))
+lazy val server = (project in file("server"))
   .settings(
-    name         := "scala-stack",
+    name         := "server",
     scalaVersion := scala3Version,
-    organization := "rop",
+    organization := rop,
     libraryDependencies ++= Seq(
       "org.typelevel"         %% "cats-effect"                   % catsEffectVersion,
       "org.http4s"            %% "http4s-dsl"                    % http4sVersion,
@@ -46,3 +92,4 @@ lazy val server = (project in file("."))
     ),
     Compile / mainClass := Some("rop.jobsboard.Application")
   )
+  .dependsOn(core.jvm)
