@@ -9,12 +9,13 @@ import org.http4s.*
 import org.http4s.server.Router
 import org.typelevel.log4cats.Logger
 import rop.jobsboard.core.*
-import rop.jobsboard.domain.auth.{LoginInfo, NewPasswordInfo}
+import rop.jobsboard.domain.auth.{ForgotPasswordInfo, LoginInfo, NewPasswordInfo, RecoverPasswordInfo}
 import rop.jobsboard.domain.security.*
 import rop.jobsboard.domain.user.{NewUserInfo, User}
 import rop.jobsboard.http.responses.FailureResponse
 import rop.jobsboard.http.validation.syntax.*
 import tsec.authentication.{SecuredRequestHandler, TSecAuthService, asAuthed}
+
 import scala.language.implicitConversions
 
 class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (auth: Auth[F], authenticator: Authenticator[F])
@@ -67,12 +68,27 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (auth: Auth[F
 
   // POST /auth/reset { ForgotPasswordInfo }
   private val forgotPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "reset" =>
-    Ok("todo")
+    for {
+      forgotPasswordInfo <- req.as[ForgotPasswordInfo]
+      _                  <- auth.sendPasswordRecoveryToken(forgotPasswordInfo.from, forgotPasswordInfo.to)
+      response           <- Ok()
+    } yield response
   }
 
   // POST /auth/recover { RecoverPasswordInfo }
   private val recoverPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "recover" =>
-    Ok("todo")
+    for {
+      recoverPasswordInfo <- req.as[RecoverPasswordInfo]
+      recovery <- auth.recoverPasswordFromToken(
+        recoverPasswordInfo.from,
+        recoverPasswordInfo.to,
+        recoverPasswordInfo.token,
+        recoverPasswordInfo.newPassword
+      )
+      response <-
+        if (recovery) Ok()
+        else Forbidden(FailureResponse("Email/token combination is incorrect"))
+    } yield response
   }
 
   // POST /auth/logout { Authorization: Bearer {jwt} } => 200 OK
@@ -93,7 +109,7 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (auth: Auth[F
     }
   }
 
-  val unauthedRoutes: HttpRoutes[F] = loginRoute <+> createUserRoute
+  val unauthedRoutes: HttpRoutes[F] = loginRoute <+> createUserRoute <+> forgotPasswordRoute <+> recoverPasswordRoute
   val authedRoutes: HttpRoutes[F] = SecuredHandler[F].liftService(
     changePasswordRoute.restrictedTo(allRoles) |+|
       logoutRoute.restrictedTo(allRoles) |+|

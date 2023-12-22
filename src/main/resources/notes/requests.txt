@@ -35,3 +35,15 @@ http post localhost:4041/api/auth/login email='netero@gmail.com' password='isaac
     i- Delete user:
 http delete localhost:4041/api/auth/users/netero@gmail.com 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDIxMjAyNTIsImlhdCI6MTcwMjAzMzg1MiwianRpIjoiZDg5Njg0NzI4NWVkMjE3ZGEwMzA4MGJjZGQwNGM1NDYifQ.KFnNmxVxgE-3s_2IAckZzOkBTwNFr2e-HdFS76Q_hKw'
   Result: 401 Unauthorized (because only users with ADMIN role have the right to delete users)
+
+    j- Forgotten password:
+http post localhost:4041/api/auth/reset from='admin@gmail.com' to='netero@gmail.com'
+    k- Reset password:
+http post localhost:4041/api/auth/recover from='admin@gmail.com' to='netero@gmail.com' token='7FZJYDL2' newPassword='newest_password'
+    l- Trying to login with old password:
+http post localhost:4041/api/auth/login email='netero@gmail.com' password='neterothehunter'
+  Result => Unauthorized
+    l- Trying to login with new password:
+http post localhost:4041/api/auth/login email='netero@gmail.com' password='newest_password'
+  Result =>
+  Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDMyOTI4NDEsImlhdCI6MTcwMzIwNjQ0MSwianRpIjoiZDdmNjMyMmRiNTc5NDE4YjljYTc2MTMyYjMwNDdkYmMifQ.toF6AIEpBSPVHcoJmNdgJBmCkuL0y05FnzjmoilRzlo
