@@ -3,6 +3,7 @@ package rop.jobsboard
 import cats.effect.*
 import org.scalajs.dom.{console, document, window}
 import rop.jobsboard.App.{Decrement, Increment, Model, Msg}
+import rop.jobsboard.components.Header
 import rop.jobsboard.core.Router
 import rop.jobsboard.core.Router.{ChangeLocation, ExternalRedirect}
 import tyrian.*
@@ -37,9 +38,7 @@ class App extends TyrianApp[Msg, Model] {
 
   override def view(model: Model): Html[Msg] = {
     div(
-      renderNavLink("Jobs", "/jobs"),
-      renderNavLink("Login", "/login"),
-      renderNavLink("Sign up", "/signup"),
+      Header.view(),
       div(s"You are now at: ${model.router.location}")
     )
   }
@@ -65,19 +64,4 @@ class App extends TyrianApp[Msg, Model] {
     )
   }
 
-  private def renderNavLink(text: String, location: String) = {
-//    'onClick' will reload the whole page, so we can use 'onEvent'.
-//    The event name "click" is a keyword and it refers to the 'click' event in javascript
-    a(
-      href    := location,
-      `class` := "nav-link",
-      onEvent(
-        "click",
-        e => {
-          e.preventDefault() // native JS to prevent reloading the page
-          Router.ChangeLocation(location)
-        }
-      )
-    )(text)
-  }
 }
