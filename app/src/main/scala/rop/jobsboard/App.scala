@@ -1,8 +1,10 @@
 package rop.jobsboard
 
 import cats.effect.*
-import org.scalajs.dom.{console, document}
+import org.scalajs.dom.{console, document, window}
 import rop.jobsboard.App.{Decrement, Increment, Model, Msg}
+import rop.jobsboard.core.Router
+import rop.jobsboard.core.Router.{ChangeLocation, ExternalRedirect}
 import tyrian.*
 import tyrian.Html.*
 import tyrian.cmds.Logger
@@ -12,78 +14,70 @@ import scala.language.postfixOps
 import scala.scalajs.js.annotation.*
 
 object App {
-  sealed trait Msg
+  type Msg = Router.Msg
   case class Increment(amount: Int) extends Msg
   case class Decrement(amount: Int) extends Msg
-  case class Model(count: Int)
+  case class Model(router: Router)
 
 }
-
-/*
-  1- Tyrian concepts:
-
-  - Model: the state of the entire app
-  - Message: piece of data handled to update the model, that can be sent by:
-_____* a command: an action that results in a message. Cmd is essentially a wrapper over IO.
-                    + emitting a pure message: (Cmd.Emit ...etc)
-                    + performing a side effect
-                    + async computation, e.g. HTTP
-                    + combining multiple commands
-_____* a subscription: (Sub.every ...etc)
-_____* an event: (OnClick ...etc)
-
-  2- Tyrian functions:
-
-  - init:
-      (+) creates the initial model
-      (+) triggers the first command
-  - update:
-      (+) model + message => new model
-      (+) may emit a command
-      (+) usually handled with PFs
-  - subscriptions:
-      (+) returns a stream of messages
-  - view:
-      (+) renders the content based on model
-      (+) triggered automatically every time model is changed
-
-  3- Tyrian App Scaling:
-    - Message types:
-      (+) keep them in companions
-      (+) use sealed traits, enums, union types
-    - One App, many parts
-      (+) each part messages its own state
-      (+) app model built out of all parts' models
-      (+) each message propagated "down" to the responsible component
-      (+) each view call propagated "down" to render components first
- */
 
 @JSExportTopLevel("JobsBoardFE")
 class App extends TyrianApp[Msg, Model] {
 
   override def init(flags: Map[String, String]): (Model, Cmd[IO, Msg]) = {
-    (Model(0), Cmd.None)
+    // 'window' is used to keep track of the current location the app is at
+    val (router, cmd) = Router.startAt(window.location.pathname)
+    (Model(router), cmd)
   }
 
-  override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = {
-    case Increment(amount) =>
-      console.log(s"Logging with ScalaJS- Changing count by: $amount")
-      (model.copy(count = model.count + amount), Logger.consoleLog[IO](s"Logging with Tyrian- Changing count by: $amount"))
-    case Decrement(amount) =>
-      console.log(s"Logging with ScalaJS- Changing count by: -$amount")
-      (model.copy(count = model.count - amount), Logger.consoleLog[IO](s"Logging with Tyrian- Changing count by: -$amount"))
+  override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = { case msg: Msg =>
+    val (newRouter, command) = model.router.update(msg)
+    (model.copy(router = newRouter), command)
   }
 
   override def view(model: Model): Html[Msg] = {
     div(
-      button(onClick(Increment(1)))("increase"),
-      button(onClick(Increment(-2)))("minus 2"),
-      button(onClick(Decrement(1)))("decrease"),
-      div(s"Tyrian is running.. This is the new model '${model.count}'")
+      renderNavLink("Jobs", "/jobs"),
+      renderNavLink("Login", "/login"),
+      renderNavLink("Sign up", "/signup"),
+      div(s"You are now at: ${model.router.location}")
     )
   }
 
   override def subscriptions(model: Model): Sub[IO, Msg] = {
-    Sub.every[IO](1 second).map(_ => Increment(1))
+//    'state' is an fs2 signal that can emit new elements whenever the signal changes
+//    'discrete' is an fs2 stream
+//    '_.get' getting an optional location from 'history'. This optional always has a value, so we can call '.get' method
+    Sub.make(
+      "urlChange",
+      model.router.history.state.discrete // stream of locations
+        .map(_.get)
+        .map(newLocation => Router.ChangeLocation(newLocation, browserTriggered = true)) // a listener for browser history changes
+
+      // it's useful to change the url, when clicking the 'go back' browser button for example.
+      // Whenever we click the 'go back' button, the 'history' changes, which triggers 'Router.ChangeLocation(newLocation)'
+      // which triggers the 'update' method, specifically 'model.router.update(msg)', which triggers the 'goto' method
+      // that executes 'history.pushState(location, location)' for the location I've just pushed the 'back' button for.
+      // So essentially what the browser is doing is pushing that location that I'm navigating to 1 more time to history,
+      // so I have to hit the back button twice to get out of there. So I need to differentiate the 'ChangeLocation' message
+      // between the situation when I'm hitting a link and the situation where I'm hitting the back or forward browser buttons,
+      // so we can add a flag for that: 'browserTriggered'
+    )
+  }
+
+  private def renderNavLink(text: String, location: String) = {
+//    'onClick' will reload the whole page, so we can use 'onEvent'.
+//    The event name "click" is a keyword and it refers to the 'click' event in javascript
+    a(
+      href    := location,
+      `class` := "nav-link",
+      onEvent(
+        "click",
+        e => {
+          e.preventDefault() // native JS to prevent reloading the page
+          Router.ChangeLocation(location)
+        }
+      )
+    )(text)
   }
 }

@@ -1,16 +1,16 @@
-package rop.jobsboard
+package rop.jobsboard.playground
 
 import cats.effect.*
 import org.scalajs.dom.document
 import tyrian.*
 import tyrian.Html.*
 
-import scala.language.postfixOps
 import scala.concurrent.duration.*
+import scala.language.postfixOps
 import scala.scalajs.js.annotation.*
 
 // this class will be compiled to a regular javascript and it will be referred to from javascript as module called "JobsBoardFE"
-@JSExportTopLevel("TyrianAppSimpleExample")
+//@JSExportTopLevel("TyrianAppSimpleExample")
 class TyrianAppSimpleExample extends TyrianApp[Int, String] {
   /*
   TyrianApp[Int, String]:
