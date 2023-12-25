@@ -2,10 +2,11 @@ package rop.jobsboard
 
 import cats.effect.*
 import org.scalajs.dom.{console, document, window}
-import rop.jobsboard.App.{Decrement, Increment, Model, Msg}
+//import rop.jobsboard.App.{Model, Msg}
 import rop.jobsboard.components.Header
 import rop.jobsboard.core.Router
 import rop.jobsboard.core.Router.{ChangeLocation, ExternalRedirect}
+import rop.jobsboard.pages.Page
 import tyrian.*
 import tyrian.Html.*
 import tyrian.cmds.Logger
@@ -15,31 +16,43 @@ import scala.language.postfixOps
 import scala.scalajs.js.annotation.*
 
 object App {
-  type Msg = Router.Msg
-  case class Increment(amount: Int) extends Msg
-  case class Decrement(amount: Int) extends Msg
-  case class Model(router: Router)
-
+  type Msg = Router.Msg | Page.Msg
+  case class Model(router: Router, page: Page)
 }
 
 @JSExportTopLevel("JobsBoardFE")
-class App extends TyrianApp[Msg, Model] {
+class App extends TyrianApp[App.Msg, App.Model] {
+
+  import App.*
 
   override def init(flags: Map[String, String]): (Model, Cmd[IO, Msg]) = {
     // 'window' is used to keep track of the current location the app is at
-    val (router, cmd) = Router.startAt(window.location.pathname)
-    (Model(router), cmd)
+    val location            = window.location.pathname
+    val page                = Page.get(location)
+    val pageCmd             = page.initCmd
+    val (router, routerCmd) = Router.startAt(location)
+    (Model(router, page), routerCmd |+| pageCmd) // 'routerCmd |+| pageCmd' combining 2 commands into 1
   }
 
-  override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = { case msg: Msg =>
-    val (newRouter, command) = model.router.update(msg)
-    (model.copy(router = newRouter), command)
+  override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = {
+    case msg: Router.Msg =>
+      val (newRouter, routerCmd) = model.router.update(msg)
+      if (model.router == newRouter) (model, Cmd.None) // no page change is necessary
+      else { // router has changes == the location has changed => a need to re-render the appropriate page
+        val newPage    = Page.get(newRouter.location)
+        val newPageCmd = newPage.initCmd
+        (model.copy(router = newRouter, page = newPage), routerCmd |+| newPageCmd)
+      }
+
+    case msg: Page.Msg =>
+      val (newPage, command) = model.page.update(msg)
+      (model.copy(page = newPage), command)
   }
 
   override def view(model: Model): Html[Msg] = {
     div(
       Header.view(),
-      div(s"You are now at: ${model.router.location}")
+      model.page.view()
     )
   }
 

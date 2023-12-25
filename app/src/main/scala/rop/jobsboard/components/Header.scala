@@ -1,7 +1,9 @@
 package rop.jobsboard.components
 
 import rop.jobsboard.core.Router
+import rop.jobsboard.pages.Page.Urls.*
 import tyrian.Html.*
+
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
 
@@ -12,9 +14,9 @@ object Header {
       renderLogo(),
       div(`class` := "header-nav")(
         ul(`class` := "header-links")(
-          renderNavLink("Jobs", "/jobs"),
-          renderNavLink("Login", "/login"),
-          renderNavLink("Sign up", "/signup")
+          renderNavLink("Jobs", JOBS),
+          renderNavLink("Login", LOGIN),
+          renderNavLink("Sign up", SIGNUP)
         )
       )
     )

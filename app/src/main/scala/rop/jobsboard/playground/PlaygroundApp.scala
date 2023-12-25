@@ -2,7 +2,7 @@ package rop.jobsboard.playground
 
 import cats.effect.*
 import org.scalajs.dom.{console, document}
-import rop.jobsboard.App.{Decrement, Increment, Model, Msg}
+import rop.jobsboard.playground.PlaygroundApp.{Decrement, Increment, Model, Msg}
 import tyrian.*
 import tyrian.Html.*
 import tyrian.cmds.Logger
