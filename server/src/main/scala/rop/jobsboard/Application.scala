@@ -15,6 +15,7 @@ import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
 import org.http4s.ember.server.EmberServerBuilder
+import org.http4s.server.middleware.CORS
 import org.typelevel.ci.CIString
 import pureconfig.ConfigSource
 import pureconfig.error.ConfigReaderException
@@ -41,7 +42,9 @@ object Application extends IOApp.Simple {
               .default[IO]
               .withHost(emberConfig.host)
               .withPort(emberConfig.port)
-              .withHttpApp(httpApi.endpoints.orNotFound)
+              .withHttpApp(
+                CORS(httpApi.endpoints).orNotFound
+              ) // TODO remove this when deploying, because the default CORS is allowing all requests (potential security issues)
               .build
         } yield server
 

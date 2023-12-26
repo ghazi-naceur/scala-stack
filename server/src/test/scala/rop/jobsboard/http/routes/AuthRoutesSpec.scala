@@ -7,9 +7,9 @@ import cats.data.OptionT
 import org.http4s.headers.Authorization
 import org.typelevel.ci.CIStringSyntax
 import rop.jobsboard.core.Auth
-import rop.jobsboard.domain.auth.{ForgotPasswordInfo, LoginInfo, NewPasswordInfo, RecoverPasswordInfo}
+import rop.jobsboard.domain.auth.*
 import rop.jobsboard.domain.security.{Authenticator, JwtToken}
-import rop.jobsboard.domain.user.{NewUserInfo, User}
+import rop.jobsboard.domain.user.*
 import rop.jobsboard.domain.{auth, user}
 import rop.jobsboard.fixature.{SecuredRouteFixture, UserFixture}
 import tsec.authentication.{IdentityStore, JWTAuthenticator}
@@ -50,7 +50,7 @@ class AuthRoutesSpec
       if (email == someEmail && password == somePassword) IO(Some(Person))
       else IO.pure(None)
 
-    override def signup(newUserInfo: user.NewUserInfo): IO[Option[user.User]] =
+    override def signup(newUserInfo: NewUserInfo): IO[Option[user.User]] =
       if (newUserInfo.email == anotherUserEmail)
         IO.pure(Some(AnotherUser))
       else IO.pure(None)

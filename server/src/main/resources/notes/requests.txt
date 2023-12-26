@@ -47,3 +47,9 @@ http post localhost:4041/api/auth/login email='netero@gmail.com' password='neter
 http post localhost:4041/api/auth/login email='netero@gmail.com' password='newest_password'
   Result =>
   Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDMyOTI4NDEsImlhdCI6MTcwMzIwNjQ0MSwianRpIjoiZDdmNjMyMmRiNTc5NDE4YjljYTc2MTMyYjMwNDdkYmMifQ.toF6AIEpBSPVHcoJmNdgJBmCkuL0y05FnzjmoilRzlo
+
+3- Running backend:
+    sbt "server/run"
+
+4- Checking port usa:
+    lsof -n -i :4041

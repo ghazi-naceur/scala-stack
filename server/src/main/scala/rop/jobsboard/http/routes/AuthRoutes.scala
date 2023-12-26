@@ -9,9 +9,9 @@ import org.http4s.*
 import org.http4s.server.Router
 import org.typelevel.log4cats.Logger
 import rop.jobsboard.core.*
-import rop.jobsboard.domain.auth.{ForgotPasswordInfo, LoginInfo, NewPasswordInfo, RecoverPasswordInfo}
+import rop.jobsboard.domain.auth.*
 import rop.jobsboard.domain.security.*
-import rop.jobsboard.domain.user.{NewUserInfo, User}
+import rop.jobsboard.domain.user.*
 import rop.jobsboard.http.responses.FailureResponse
 import rop.jobsboard.http.validation.syntax.*
 import tsec.authentication.{SecuredRequestHandler, TSecAuthService, asAuthed}
@@ -44,7 +44,7 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (auth: Auth[F
         potentialNewUser <- auth.signup(newUserInfo)
         response <- potentialNewUser match {
           case Some(user) => Created(user.email)
-          case None       => BadRequest(s"User with '${newUserInfo.email}' already exists")
+          case None       => BadRequest(FailureResponse(s"User with '${newUserInfo.email}' already exists"))
         }
       } yield response
     }

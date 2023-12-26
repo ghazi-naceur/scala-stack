@@ -2,7 +2,8 @@ package rop.jobsboard.fixature
 
 import cats.effect.IO
 import rop.jobsboard.core.Users
-import rop.jobsboard.domain.user.{NewUserInfo, Role, User}
+import rop.jobsboard.domain.auth.*
+import rop.jobsboard.domain.user.*
 
 trait UserFixture {
 

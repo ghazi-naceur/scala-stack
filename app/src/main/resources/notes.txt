@@ -11,3 +11,6 @@ npm run start
 
 > sbt
 > ~fastOptJS
+
+Compiling frontend:
+    sbt app/clean cleanFiles fastOptJS

@@ -1,12 +1,19 @@
 package rop.jobsboard.pages
 
 import cats.effect.IO
-import rop.jobsboard.common.Constants
+import rop.jobsboard.common.{Constants, Endpoint}
+import rop.jobsboard.domain.auth.*
 import rop.jobsboard.pages.Page.Status
-import rop.jobsboard.pages.Page.StatusKind.ERROR
+import rop.jobsboard.pages.Page.StatusKind.{ERROR, SUCCESS}
 import tyrian.Html.*
 import tyrian.cmds.Logger
-import tyrian.{Cmd, Html}
+import tyrian.http.*
+import tyrian.http.Method.Post
+import tyrian.http.{Body, Http, Request}
+import tyrian.{Cmd, Html, http}
+import io.circe.syntax.*
+import io.circe.parser.*
+import io.circe.generic.auto.*
 
 /*
   NewUserInfo form:
@@ -49,8 +56,22 @@ final case class SignUpPage(
         (setErrorStatus("Enter a password"), Cmd.None)
       else if (password != confirmPassword)
         (setErrorStatus("Password fields do not match"), Cmd.None)
-      else (this, Logger.consoleLog[IO]("Signing up", email, password, firstName, lastName, company))
-    case _ => (this, Cmd.None)
+      else
+        (
+          this,
+          Commands.signup(
+            NewUserInfo(
+              email,
+              password,
+              Option(firstName).filter(_.nonEmpty),
+              Option(lastName).filter(_.nonEmpty),
+              Option(company).filter(_.nonEmpty)
+            )
+          )
+        )
+    case SignUpError(message)   => (setErrorStatus(message), Cmd.None)
+    case SignUpSuccess(message) => (setSuccessStatus(message), Cmd.None)
+    case _                      => (this, Cmd.None)
   }
 
   override def view(): Html[Page.Msg] =
@@ -97,6 +118,9 @@ final case class SignUpPage(
   private def setErrorStatus(message: String): Page =
     this.copy(status = Some(Status(message, ERROR)))
 
+  private def setSuccessStatus(message: String): Page =
+    this.copy(status = Some(Status(message, SUCCESS)))
+
 }
 
 object SignUpPage {
@@ -112,4 +136,34 @@ object SignUpPage {
   // Actions
   case object AttemptSignUp extends Msg
   case object NoOp          extends Msg
+
+  // Statuses
+  case class SignUpError(message: String)   extends Msg
+  case class SignUpSuccess(message: String) extends Msg
+
+  object Endpoints {
+    val signup: Endpoint[Msg] = new Endpoint[Msg] {
+      override val location: String = Constants.Endpoints.signup
+      override val method: Method   = Post
+      override val onSuccess: Response => Msg =
+        response =>
+          response.status match {
+            case tyrian.http.Status(201, _) => SignUpSuccess("User has signed up in successfully.")
+            case tyrian.http.Status(s, _) if s >= 400 && s < 500 =>
+              val json   = response.body
+              val parsed = parse(json).flatMap(_.hcursor.get[String]("error"))
+              // 'error' is the field name from 'FailureResponse.scala'
+              parsed match
+                case Right(thr) => SignUpError(thr)
+                case Left(thr)  => SignUpError(s"Error: ${thr.getMessage}")
+          }
+      override val onError: HttpError => Msg = e => SignUpError(e.toString)
+    }
+  }
+
+  object Commands {
+    def signup(newUserInfo: NewUserInfo): Cmd[IO, Msg] =
+      Endpoints.signup.call(newUserInfo)
+
+  }
 }
