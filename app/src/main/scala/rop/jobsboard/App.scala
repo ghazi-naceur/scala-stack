@@ -2,7 +2,7 @@ package rop.jobsboard
 
 import cats.effect.*
 import org.scalajs.dom.{console, document, window}
-//import rop.jobsboard.App.{Model, Msg}
+import rop.jobsboard.core.Session
 import rop.jobsboard.components.Header
 import rop.jobsboard.core.Router
 import rop.jobsboard.core.Router.{ChangeLocation, ExternalRedirect}
@@ -16,8 +16,8 @@ import scala.language.postfixOps
 import scala.scalajs.js.annotation.*
 
 object App {
-  type Msg = Router.Msg | Page.Msg
-  case class Model(router: Router, page: Page)
+  trait Msg
+  case class Model(router: Router, session: Session, page: Page)
 }
 
 @JSExportTopLevel("JobsBoardFE")
@@ -31,7 +31,9 @@ class App extends TyrianApp[App.Msg, App.Model] {
     val page                = Page.get(location)
     val pageCmd             = page.initCmd
     val (router, routerCmd) = Router.startAt(location)
-    (Model(router, page), routerCmd |+| pageCmd) // 'routerCmd |+| pageCmd' combining 2 commands into 1
+    val session             = Session()
+    val sessionCmd          = session.initCmd
+    (Model(router, session, page), routerCmd |+| sessionCmd |+| pageCmd)
   }
 
   override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = {
@@ -44,7 +46,11 @@ class App extends TyrianApp[App.Msg, App.Model] {
         (model.copy(router = newRouter, page = newPage), routerCmd |+| newPageCmd)
       }
 
-    case msg: Page.Msg =>
+    case msg: Session.Msg =>
+      val (newSession, cmd) = model.session.update(msg)
+      (model.copy(session = newSession), cmd)
+
+    case msg: App.Msg =>
       val (newPage, command) = model.page.update(msg)
       (model.copy(page = newPage), command)
   }

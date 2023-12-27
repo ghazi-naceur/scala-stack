@@ -2,6 +2,7 @@ package rop.jobsboard.pages
 
 import tyrian.*
 import cats.effect.*
+import rop.jobsboard.App
 import rop.jobsboard.pages.Page.Msg
 
 object Page {
@@ -38,13 +39,13 @@ object Page {
 abstract class Page {
 
   // send a command upon instantiating
-  def initCmd: Cmd[IO, Msg]
+  def initCmd: Cmd[IO, App.Msg]
 
   // update content of the page
-  def update(msg: Msg): (Page, Cmd[IO, Msg])
+  def update(msg: App.Msg): (Page, Cmd[IO, App.Msg])
 
   // render the page
-  def view(): Html[Msg]
+  def view(): Html[App.Msg]
 }
 
 // login page

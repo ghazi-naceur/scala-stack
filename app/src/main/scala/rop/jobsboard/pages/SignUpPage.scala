@@ -14,6 +14,7 @@ import tyrian.{Cmd, Html, http}
 import io.circe.syntax.*
 import io.circe.parser.*
 import io.circe.generic.auto.*
+import rop.jobsboard.App
 
 /*
   NewUserInfo form:
@@ -38,9 +39,9 @@ final case class SignUpPage(
 ) extends Page {
 
   import SignUpPage.*
-  override def initCmd: Cmd[IO, Page.Msg] = Cmd.None
+  override def initCmd: Cmd[IO, App.Msg] = Cmd.None
 
-  override def update(msg: Page.Msg): (Page, Cmd[IO, Page.Msg]) = msg match {
+  override def update(msg: App.Msg): (Page, Cmd[IO, App.Msg]) = msg match {
     // We need to send messages as the user is filling data in the input
 //    case UpdateEmail(email) => (this, Logger.consoleLog[IO]("Changing email to: " + email))
     case UpdateEmail(e)            => (this.copy(email = e), Cmd.None)
@@ -74,7 +75,7 @@ final case class SignUpPage(
     case _                      => (this, Cmd.None)
   }
 
-  override def view(): Html[Page.Msg] =
+  override def view(): Html[App.Msg] =
     div(`class` := "form-section")(
       div(`class` := "top-section")(
         h1("Sign up")
@@ -124,7 +125,7 @@ final case class SignUpPage(
 }
 
 object SignUpPage {
-  trait Msg extends Page.Msg
+  trait Msg extends App.Msg
 
   case class UpdateEmail(email: String)                     extends Msg
   case class UpdatePassword(password: String)               extends Msg
