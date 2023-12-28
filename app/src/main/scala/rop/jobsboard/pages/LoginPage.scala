@@ -41,7 +41,7 @@ final case class LoginPage(email: String = "", password: String = "", status: Op
       else (this, Commands.login(LoginInfo(email, password)))
     case LoginError(error) => (setErrorStatus(error), Cmd.None)
     case LoginSuccess(token) =>
-      (setSuccessStatus("You have logged in successfully"), Cmd.Emit(Session.SetToken(email, token)))
+      (setSuccessStatus("You have logged in successfully"), Cmd.Emit(Session.SetToken(email, token, isNewUser = true)))
     //                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ should be a App.Msg
     // The command will propagate the token through the entire app. The message issued by this command will be intercepted
     // by 'update' method of App.scala and it will change the model of the app to store the user session token

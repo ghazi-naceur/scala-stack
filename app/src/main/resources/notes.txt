@@ -14,3 +14,15 @@ npm run start
 
 Compiling frontend:
     sbt app/clean cleanFiles fastOptJS
+
+Setting cookies in browser using browser console:
+    key="email"
+    value="netero@gmail.com"
+    d = new Date()
+    d.setYear(2025)
+    document.cookie=`${key}=${value};expires=${d};path=/`
+    document.cookie
+
+Expiring cookies in browser using browser console: setting value to empty string + expiration at a past date
+    document.cookie=`email=;expires=${new Date(0)};path=/`
+    document.cookie

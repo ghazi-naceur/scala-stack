@@ -12,4 +12,10 @@ object Constants {
     val signup = s"$root/api/auth/users"
     val login  = s"$root/api/auth/login"
   }
+
+  object Cookies {
+    val duration: Int = 10 * 24 * 3600 * 1000
+    val email: String = "email"
+    val token: String = "token"
+  }
 }
