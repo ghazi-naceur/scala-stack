@@ -1,7 +1,9 @@
 package rop.jobsboard.components
 
-import rop.jobsboard.core.Router
+import rop.jobsboard.App
+import rop.jobsboard.core.{Router, Session}
 import rop.jobsboard.pages.Page.Urls.*
+import tyrian.Html
 import tyrian.Html.*
 
 import scala.scalajs.js
@@ -14,9 +16,7 @@ object Header {
       renderLogo(),
       div(`class` := "header-nav")(
         ul(`class` := "header-links")(
-          renderNavLink("Jobs", JOBS),
-          renderNavLink("Login", LOGIN),
-          renderNavLink("Sign up", SIGNUP)
+          renderNavLinks()
         )
       )
     )
@@ -58,7 +58,30 @@ object Header {
     )
   }
 
-  private def renderNavLink(text: String, location: String) = {
+  private def renderNavLinks(): List[Html[App.Msg]] = {
+    val constantLinks = List(
+      renderSimpleNavLink("Jobs", JOBS)
+    )
+
+    val unauthedLinks = List(
+      renderSimpleNavLink("Login", LOGIN),
+      renderSimpleNavLink("Sign up", SIGNUP)
+    )
+
+    val authedLinks = List(
+      renderNavLink("Log out", HASH)(_ => Session.Logout)
+    )
+
+    constantLinks ++ (
+      if (Session.isActive) authedLinks
+      else unauthedLinks
+    )
+  }
+  
+  private def renderSimpleNavLink(text:String, location:String) =
+    renderNavLink(text, location)(Router.ChangeLocation(_))
+
+  private def renderNavLink(text: String, location: String)(location2msg: String => App.Msg) = {
     li(`class` := "nav-item")(
       a(
         href    := location,
@@ -67,7 +90,7 @@ object Header {
           "click",
           e => {
             e.preventDefault() // native JS to prevent reloading the page
-            Router.ChangeLocation(location)
+            location2msg(location)
           }
         )
       )(text)

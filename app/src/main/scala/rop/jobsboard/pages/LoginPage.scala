@@ -51,7 +51,7 @@ final case class LoginPage(email: String = "", password: String = "", status: Op
   override def view(): Html[App.Msg] =
     div(`class` := "form-section")(
       div(`class` := "top-section")(
-        h1("Sign up")
+        h1("Log in")
       ),
       // 'preventDefault()' is used to prevent refreshing the page after submitting a form, to avoid loosing state
       form(
