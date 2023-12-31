@@ -9,8 +9,8 @@ import rop.jobsboard.common.Constants.Cookies
 import rop.jobsboard.common.Constants.Cookies.*
 import rop.jobsboard.common.{Constants, Endpoint}
 import rop.jobsboard.pages.Page
-import tyrian.http.Method.Post
-import tyrian.http.{HttpError, Method, Response}
+import tyrian.http.Method.{Get, Post}
+import tyrian.http.{HttpError, Method, Response, Status}
 
 import scala.scalajs.js.Date
 
@@ -21,23 +21,28 @@ final case class Session(email: Option[String] = None, token: Option[String] = N
     case SetToken(e, t, isNewUser) =>
       val cookieCmd = Commands.setAllSessionCookies(e, t, isFresh = isNewUser)
       val routingCmd =
-        if (isNewUser) Cmd.Emit(Router.ChangeLocation(Page.Urls.HOME)) // re-routing to home when the user is logged in
-        else Cmd.None                                                  // no re-routing to home if the user is not logged in
+        if (isNewUser) Cmd.Emit(Router.ChangeLocation(Page.Urls.HOME)) // new authenticated user == token is still fresh
+        else Commands.checkToken                                       // check whether token is still valid on the server
       (
         this.copy(email = Some(e), token = Some(t)),
         cookieCmd |+| routingCmd
       )
+
+    case CheckToken      => (this, Commands.checkToken)
+    case KeepToken       => (this, Cmd.None)
 
     case Logout =>
       // trigger an authorized http to the backend
       val cmd = token.map(_ => Commands.logout).getOrElse(Cmd.None)
       (this, cmd)
 
-    case LogoutSuccess =>
+    case LogoutSuccess | InvalidateToken =>
       (
         this.copy(email = None, token = None),
         Commands.clearAllSessionCookies() |+| Cmd.Emit(Router.ChangeLocation(Page.Urls.HOME))
       )
+
+    // todo add case LogoutFailure
   }
 
   def initCmd: Cmd[IO, Msg] = {
@@ -55,9 +60,16 @@ object Session {
   trait Msg extends App.Msg
 
   case class SetToken(email: String, token: String, isNewUser: Boolean = false) extends Msg
-  case object Logout                                                            extends Msg
-  case object LogoutSuccess                                                     extends Msg
-  case object LogoutFailure                                                     extends Msg
+
+  // Checking the token
+  case object CheckToken      extends Msg
+  case object KeepToken       extends Msg
+  case object InvalidateToken extends Msg
+
+  // Logout actions
+  case object Logout        extends Msg
+  case object LogoutSuccess extends Msg
+  case object LogoutFailure extends Msg
 
   def isActive: Boolean = getUserToken.nonEmpty
 
@@ -65,10 +77,21 @@ object Session {
 
   object Endpoints {
     val logout: Endpoint[Msg] = new Endpoint[Msg] {
-      val location: String           = Constants.Endpoints.logout
-      val method: Method             = Post
-      val onSuccess: Response => Msg = _ => LogoutSuccess
-      val onError: HttpError => Msg  = _ => LogoutFailure
+      override val location: String           = Constants.Endpoints.logout
+      override val method: Method             = Post
+      override val onSuccess: Response => Msg = _ => LogoutSuccess
+      override val onError: HttpError => Msg  = _ => LogoutFailure
+    }
+
+    val checkToken: Endpoint[Msg] = new Endpoint[Msg] {
+      override val location: String = Constants.Endpoints.checkToken
+      override val method: Method   = Get
+      override val onSuccess: Response => Msg = response =>
+        response.status match {
+          case Status(200, _) => KeepToken
+          case _              => InvalidateToken
+        }
+      override val onError: HttpError => Msg = _ => InvalidateToken
     }
   }
 
@@ -76,6 +99,10 @@ object Session {
 
     def logout: Cmd[IO, Msg] =
       Endpoints.logout.callAuthorized()
+
+    def checkToken: Cmd[IO, Msg] =
+      Endpoints.checkToken.callAuthorized() // 'callAuthorized' will embed automatically whatever we have in the cookie
+      // as an authorization token
 
     def setSessionCookie(name: String, value: String, isFresh: Boolean): Cmd[IO, Msg] =
       Cmd.SideEffect[IO] {
