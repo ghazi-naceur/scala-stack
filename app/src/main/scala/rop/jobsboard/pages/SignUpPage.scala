@@ -36,11 +36,9 @@ final case class SignUpPage(
     lastName: String = "",
     company: String = "",
     status: Option[Status] = None
-) extends Page {
+) extends FormPage("Sign up", status) {
 
   import SignUpPage.*
-  override def initCmd: Cmd[IO, App.Msg] = Cmd.None
-
   override def update(msg: App.Msg): (Page, Cmd[IO, App.Msg]) = msg match {
     // We need to send messages as the user is filling data in the input
 //    case UpdateEmail(email) => (this, Logger.consoleLog[IO]("Changing email to: " + email))
@@ -75,46 +73,15 @@ final case class SignUpPage(
     case _                      => (this, Cmd.None)
   }
 
-  override def view(): Html[App.Msg] =
-    div(`class` := "form-section")(
-      div(`class` := "top-section")(
-        h1("Sign up")
-      ),
-      // 'preventDefault()' is used to prevent refreshing the page after submitting a form, to avoid loosing state
-      form(
-        name    := "signin",
-        `class` := "form",
-        onEvent(
-          "submit",
-          e => {
-            e.preventDefault()
-            NoOp // won't change the state of the page.
-            // So everytime the form is submitted, we're going to send 'NoOp' which is not going to change the state of the page
-          }
-        )
-      )(
-        // 6 inputs
-        // 'UpdateEmail(_)' this is the function to change the value of the email in this state
-        renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
-        renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
-        renderInput("Confirm password", "cPassword", "password", isRequired = true, UpdateConfirmPassword(_)),
-        renderInput("First name", "firstName", "text", isRequired = false, UpdateFirstName(_)),
-        renderInput("Last name", "lastName", "text", isRequired = false, UpdateLastName(_)),
-        renderInput("Company", "company", "text", isRequired = false, UpdateCompany(_)),
-        // button
-        button(`type` := "button", onClick(AttemptSignUp))("Sign up")
-      ),
-      status.map(s => div(s.message)).getOrElse(div())
-    )
-
-  private def renderInput(name: String, uid: String, kind: String, isRequired: Boolean, onChange: String => Msg) =
-    div(`class` := "form-input")(
-      label(`for` := name, `class` := "form-label")(
-        if (isRequired) span("*") else span(),
-        text(name)
-      ),
-      input(`type` := kind, `class` := "form-control", id := uid, onInput(onChange))
-    )
+  override def renderFormContent(): List[Html[App.Msg]] = List(
+    renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
+    renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
+    renderInput("Confirm password", "cPassword", "password", isRequired = true, UpdateConfirmPassword(_)),
+    renderInput("First name", "firstName", "text", isRequired = false, UpdateFirstName(_)),
+    renderInput("Last name", "lastName", "text", isRequired = false, UpdateLastName(_)),
+    renderInput("Company", "company", "text", isRequired = false, UpdateCompany(_)),
+    button(`type` := "button", onClick(AttemptSignUp))("Sign up")
+  )
 
   private def setErrorStatus(message: String): Page =
     this.copy(status = Some(Status(message, ERROR)))
@@ -146,7 +113,7 @@ object SignUpPage {
     val signup: Endpoint[Msg] = new Endpoint[Msg] {
       override val location: String = Constants.Endpoints.signup
       override val method: Method   = Post
-      override val onSuccess: Response => Msg =
+      override val onResponse: Response => Msg =
         response =>
           response.status match {
             case tyrian.http.Status(201, _) => SignUpSuccess("User has signed up in successfully.")

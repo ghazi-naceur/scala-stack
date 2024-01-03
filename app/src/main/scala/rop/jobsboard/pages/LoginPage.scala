@@ -25,11 +25,10 @@ import rop.jobsboard.domain.auth.LoginInfo
   Status (success or failure)
  */
 
-final case class LoginPage(email: String = "", password: String = "", status: Option[Page.Status] = None) extends Page {
+final case class LoginPage(email: String = "", password: String = "", status: Option[Page.Status] = None)
+    extends FormPage("Log in", status) {
 
   import LoginPage.*
-  override def initCmd: Cmd[IO, App.Msg] = Cmd.None
-
   override def update(msg: App.Msg): (Page, Cmd[IO, App.Msg]) = msg match {
     case UpdateEmail(e)    => (this.copy(email = e), Cmd.None)
     case UpdatePassword(p) => (this.copy(password = p), Cmd.None)
@@ -48,39 +47,13 @@ final case class LoginPage(email: String = "", password: String = "", status: Op
     case _ => (this, Cmd.None)
   }
 
-  override def view(): Html[App.Msg] =
-    div(`class` := "form-section")(
-      div(`class` := "top-section")(
-        h1("Log in")
-      ),
-      // 'preventDefault()' is used to prevent refreshing the page after submitting a form, to avoid loosing state
-      form(
-        name    := "signin",
-        `class` := "form",
-        onEvent(
-          "submit",
-          e => {
-            e.preventDefault()
-            NoOp // won't change the state of the page.
-            // So everytime the form is submitted, we're going to send 'NoOp' which is not going to change the state of the page
-          }
-        )
-      )(
-        renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
-        renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
-        button(`type` := "button", onClick(AttemptLogin))("Login")
-      ),
-      status.map(s => div(s.message)).getOrElse(div())
-    )
+  override def renderFormContent(): List[Html[App.Msg]] = List(
+    renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
+    renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
+    button(`type` := "button", onClick(AttemptLogin))("Login"),
+    renderAuxLink(Page.Urls.FORGOT_PASSWORD, "Forgot password?")
+  )
 
-  private def renderInput(name: String, uid: String, kind: String, isRequired: Boolean, onChange: String => Msg) =
-    div(`class` := "form-input")(
-      label(`for` := name, `class` := "form-label")(
-        if (isRequired) span("*") else span(),
-        text(name)
-      ),
-      input(`type` := kind, `class` := "form-control", id := uid, onInput(onChange))
-    )
   private def setErrorStatus(message: String): Page =
     this.copy(status = Some(Status(message, StatusKind.ERROR)))
 
@@ -105,7 +78,7 @@ object LoginPage {
     val login: Endpoint[Msg] = new Endpoint[Msg] {
       override val location: String = Constants.Endpoints.login
       override val method: Method   = Post
-      override val onSuccess: Response => Msg = response => {
+      override val onResponse: Response => Msg = response => {
         val potentialToken = response.headers.get("authorization")
         potentialToken match {
           case Some(token) => LoginSuccess(token)

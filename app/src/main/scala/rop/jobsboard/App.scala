@@ -17,6 +17,7 @@ import scala.scalajs.js.annotation.*
 
 object App {
   trait Msg
+  case object NoOp extends Msg
   case class Model(router: Router, session: Session, page: Page)
 }
 

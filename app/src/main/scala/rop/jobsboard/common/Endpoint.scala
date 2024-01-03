@@ -11,7 +11,7 @@ trait Endpoint[M] {
 
   val location: String
   val method: Method
-  val onSuccess: Response => M
+  val onResponse: Response => M
   val onError: HttpError => M
 
   // Public API
@@ -32,7 +32,7 @@ trait Endpoint[M] {
         timeout = Request.DefaultTimeOut,
         withCredentials = false
       ),
-      Decoder[M](onSuccess, onError) // The decoder is the response parser. It emits a message based on the error
+      Decoder[M](onResponse, onError) // The decoder is the response parser. It emits a message based on the error
       // state of the request (onError) or the response that gets back from the server (onSuccess).
     )
 
@@ -46,7 +46,7 @@ trait Endpoint[M] {
         timeout = Request.DefaultTimeOut,
         withCredentials = false
       ),
-      Decoder[M](onSuccess, onError) // The decoder is the response parser. It emits a message based on the error
+      Decoder[M](onResponse, onError) // The decoder is the response parser. It emits a message based on the error
       // state of the request (onError) or the response that gets back from the server (onSuccess).
     )
 }
