@@ -28,7 +28,8 @@ final case class ForgotPasswordPage(email: String = "", status: Option[Page.Stat
 
   override protected def renderFormContent(): List[Html[App.Msg]] = List(
     renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
-    button(`type` := "button", onClick(AttemptResetPassword))("Send email")
+    button(`type` := "button", onClick(AttemptResetPassword))("Send email"),
+    renderAuxLink(Page.Urls.RESET_PASSWORD, "Have a token?")
   )
 
   private def setErrorStatus(message: String): Page =
@@ -58,6 +59,6 @@ object ForgotPasswordPage {
 
   object Commands {
     def resetPassword(email: String) =
-      Endpoints.resetPassword.call(ForgotPasswordInfo("admin@gmail.com", email))
+      Endpoints.resetPassword.call(ForgotPasswordInfo(Constants.ADMIN_EMAIL, email))
   }
 }
