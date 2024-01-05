@@ -121,9 +121,11 @@ object SignUpPage {
               val json   = response.body
               val parsed = parse(json).flatMap(_.hcursor.get[String]("error"))
               // 'error' is the field name from 'FailureResponse.scala'
-              parsed match
+              parsed match {
                 case Right(thr) => SignUpError(thr)
                 case Left(thr)  => SignUpError(s"Error: ${thr.getMessage}")
+              }
+            case _ => SignUpError("Unknown reply from server.")
           }
       override val onError: HttpError => Msg = e => SignUpError(e.toString)
     }

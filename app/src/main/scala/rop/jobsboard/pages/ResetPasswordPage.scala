@@ -73,9 +73,11 @@ object ResetPasswordPage {
           case Status(s, _) if s >= 400 && s < 500 =>
             val json   = response.body
             val parsed = parse(json).flatMap(_.hcursor.get[String]("error"))
-            parsed match
+            parsed match {
               case Right(errorFromServer) => ResetPasswordFailure(errorFromServer)
               case Left(error)            => ResetPasswordFailure(s"Response error: ${error.getMessage}")
+            }
+          case _ => ResetPasswordFailure("Unknown reply from server.")
         }
       override val onError: HttpError => Msg = e => ResetPasswordFailure(e.toString)
     }
