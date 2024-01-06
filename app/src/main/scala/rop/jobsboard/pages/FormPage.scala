@@ -60,6 +60,15 @@ abstract class FormPage(title: String, status: Option[Status]) extends Page {
       input(`type` := kind, `class` := "form-control", id := uid, onInput(onChange))
     )
 
+  protected def renderTextArea(name: String, uid: String, isRequired: Boolean, onChange: String => App.Msg) =
+    div(`class` := "form-input")(
+      label(`for` := name, `class` := "form-label")(
+        if (isRequired) span("*") else span(),
+        text(name)
+      ),
+      textarea(`class` := "form-control", id := uid, onInput(onChange))("")
+    )
+
   protected def renderAuxLink(location: String, text: String): Html[App.Msg] =
     a(
       href    := location,
