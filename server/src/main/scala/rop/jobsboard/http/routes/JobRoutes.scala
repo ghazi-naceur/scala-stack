@@ -53,10 +53,10 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
   // http POST '/jobs/create { jobInfo }'
   // http post localhost:4041/api/jobs/create company='EnisoCorp' title='Scala developer' description='This is a job description' externalUrl='https://google.com' remote=true location='Amsterdam'
   // http post localhost:4041/api/jobs/create < src/main/resources/payloads/jobinfo.json
-  private val createJobRoute: AuthRoute[F] = { case req @ POST -> Root / "create" asAuthed _ =>
+  private val createJobRoute: AuthRoute[F] = { case req @ POST -> Root / "create" asAuthed user =>
     req.request.validate[JobInfo] { jobInfo =>
       for {
-        jobId    <- jobs.create("todo@gmail.com", jobInfo)
+        jobId    <- jobs.create(user.email, jobInfo)
         response <- Created(jobId)
       } yield response
     }
