@@ -3,7 +3,6 @@ package rop.jobsboard.http.routes
 // These 2 imports should placed before the http4s imports
 import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
-import rop.jobsboard.fixature.SecuredRouteFixture
 //
 import cats.effect.*
 import cats.implicits.*
@@ -15,7 +14,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import rop.jobsboard.fixature.JobFixture
+import rop.jobsboard.fixature.{JobFixture, SecuredRouteFixture}
 import rop.jobsboard.core.Jobs
 import rop.jobsboard.domain.Job.*
 import org.scalatest.freespec.*
@@ -29,6 +28,8 @@ class JobRoutesSpec
     with Http4sDsl[IO]
     with JobFixture
     with SecuredRouteFixture {
+
+  val defaultJobFilter: JobFilter = JobFilter(companies = List("Some company"))
 
   val jobs: Jobs[IO] = new Jobs[IO] {
     override def create(ownerEmail: String, jobInfo: JobInfo): IO[UUID] = IO.pure(NewJobUuid)
@@ -50,6 +51,8 @@ class JobRoutesSpec
     override def delete(id: UUID): IO[Int] =
       if (id == TestJobUuid) IO.pure(1)
       else IO.pure(0)
+
+    override def possibleFilters(): IO[JobFilter] = IO(defaultJobFilter)
   }
 
   given logger: Logger[IO]      = Slf4jLogger.getLogger[IO]
@@ -163,6 +166,15 @@ class JobRoutesSpec
         responseOk.status shouldBe Status.Ok
         responseNotFound.status shouldBe Status.NotFound
       }
+    }
+
+    "should surface all possible filters" in {
+      for {
+        response <- jobRoutes.orNotFound.run(
+          Request[IO](method = Method.GET, uri = uri"/jobs/filters")
+        )
+        filter <- response.as[JobFilter]
+      } yield filter shouldBe defaultJobFilter
     }
   }
 

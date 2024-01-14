@@ -22,9 +22,10 @@ trait Jobs[F[_]] {
   def find(id: UUID): F[Option[Job]]
   def update(id: UUID, jobInfo: JobInfo): F[Option[Job]]
   def delete(id: UUID): F[Int]
+  def possibleFilters(): F[JobFilter]
 }
 
-class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) extends Jobs[F]:
+class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) extends Jobs[F] {
   override def create(ownerEmail: String, jobInfo: JobInfo): F[UUID] =
     sql"""
          INSERT INTO jobs(
@@ -123,7 +124,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
     val fromFragment: Fragment =
       fr"FROM jobs"
 
-      /*
+    /*
         WHERE company in [filter.companies]
         AND  company in [filter.companies]
         AND  company in [filter.companies]
@@ -136,7 +137,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
         )
         AND salaryHi > [filter.salary]
         AND remote = [filter.remote]
-       */
+     */
 
     val whereFragment: Fragment = Fragments.whereAndOpt(
       // company in [filter.companies]
@@ -218,6 +219,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
        """.update.run
       .transact(xa)
       .flatMap(_ => find(id)) // return the update job
+
   override def delete(id: UUID): F[Int] =
     sql"""
          DELETE FROM jobs
@@ -225,7 +227,48 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
        """.update.run
       .transact(xa)
 
+  // select all unique values for companies, locations, countries, seniorities, tags from all rows from the DB
+  override def possibleFilters(): F[JobFilter] = {
+// Yolo is useful to debug SQL queries
+//    val yolo = xa.yolo
+//    import yolo.*
+
+    val query = sql"""
+       SELECT
+         ARRAY(SELECT DISTINCT(company) FROM jobs) AS companies,
+         ARRAY(SELECT DISTINCT(location) FROM jobs) AS locations,
+         ARRAY(SELECT DISTINCT(country) FROM jobs WHERE country IS NOT NULL) AS countries,
+         ARRAY(SELECT DISTINCT(seniority) FROM jobs WHERE seniority IS NOT NULL) AS seniorities,
+         ARRAY(SELECT DISTINCT(UNNEST(tags)) FROM jobs) AS tags,
+         MAX(salaryHi),
+         false
+       FROM jobs
+       """
+      .query[JobFilter]
+
+//    query.check() *>
+    query.option
+      .transact(xa)
+      .map(_.getOrElse(JobFilter()))
+  }
+
+}
 object LiveJobs {
+
+  // This given is not mandatory, as Doobie can derive 'Read[JJobFilter]' type class instance automatically
+  given jobFilterRead: Read[JobFilter] = Read[
+    (
+        List[String],
+        List[String],
+        List[String],
+        List[String],
+        List[String],
+        Option[Int],
+        Boolean
+    )
+  ].map { case (companies, locations, countries, seniorities, tags, maxSalary, remote) =>
+    JobFilter(companies, locations, countries, seniorities, tags, maxSalary, remote)
+  }
 
   given jobRead: Read[Job] = Read[
     (

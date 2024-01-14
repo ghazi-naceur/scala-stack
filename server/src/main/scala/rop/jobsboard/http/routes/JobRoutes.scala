@@ -27,6 +27,11 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
   object OffsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
   object LimitQueryParam  extends OptionalQueryParamDecoderMatcher[Int]("limit")
 
+  // http get localhost:4041/api/jobs/filters => return all possible filters
+  private val allFiltersRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ GET -> Root / "filters" =>
+    jobs.possibleFilters().flatMap(filter => Ok(filter))
+  }
+
   // REST endpoints
   // http POST '/jobs?limit=x&offset=y { filters }'
   // http post localhost:4041/api/jobs
@@ -84,7 +89,7 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
     }
   }
 
-  val unauthedRoutes: HttpRoutes[F] = allJobsRoute <+> findJobRoute
+  val unauthedRoutes: HttpRoutes[F] = allFiltersRoute <+> allJobsRoute <+> findJobRoute
   val authedRoutes: HttpRoutes[F] = SecuredHandler[F].liftService(
     createJobRoute.restrictedTo(allRoles)
       |+| updateJobRoute.restrictedTo(allRoles)
