@@ -138,7 +138,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
         AND remote = [filter.remote]
        */
 
-    val whereFragment: Fragment = Fragments.whereOrOpt(
+    val whereFragment: Fragment = Fragments.whereAndOpt(
       // company in [filter.companies]
       filter.companies.toNel // Option[NonEmptyList] => Option[Fragment]
         .map(companies => Fragments.in(fr"company", companies)),
@@ -149,7 +149,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
       filter.seniorities.toNel // Option[NonEmptyList] => Option[Fragment]
         .map(seniorities => Fragments.in(fr"seniority", seniorities)),
       filter.tags.toNel.map(tags => // intersection between filter.tags and row's tags
-        Fragments.or(tags.map(tag => fr"$tag=any(tags)").toList: _*)
+        Fragments.or(tags.toList.map(tag => fr"$tag=any(tags)"): _*)
       ),
       filter.maxSalary.map(salary => fr"salaryHi > $salary"),
       filter.remote.some.map(remote => fr"remote=$remote")

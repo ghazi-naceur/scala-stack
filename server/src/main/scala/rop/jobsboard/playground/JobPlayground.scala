@@ -6,9 +6,10 @@ import doobie.hikari.HikariTransactor
 import doobie.implicits.*
 import doobie.util.*
 import rop.jobsboard.core.LiveJobs
-import rop.jobsboard.domain.Job.JobInfo
+import rop.jobsboard.domain.Job.{JobFilter, JobInfo}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import rop.jobsboard.domain.pagination.Pagination
 
 import scala.io.StdIn
 
@@ -51,6 +52,8 @@ object JobPlayground extends IOApp.Simple {
         _         <- IO(println(s"Deleted job: $newJob. \nNext...")) *> IO(StdIn.readLine())
         remaining <- jobs.all()
         _         <- IO(println(s"Remaining jobs: $remaining. \nNext...")) *> IO(StdIn.readLine())
+        filtered  <- jobs.all(JobFilter(List("Corp")), Pagination.default)
+        _         <- IO(println(s"Filtered jobs: $filtered. \nNext...")) *> IO(StdIn.readLine())
       } yield ()
     }
   }

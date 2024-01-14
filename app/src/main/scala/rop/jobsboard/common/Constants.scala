@@ -9,6 +9,8 @@ object Constants {
 
   val ADMIN_EMAIL = "admin@gmail.com"
 
+  val defaultPageSize = 20
+
   object Endpoints {
     val root           = "http://localhost:4041"
     val signup         = s"$root/api/auth/users"
@@ -19,6 +21,7 @@ object Constants {
     val resetPassword  = s"$root/api/auth/recover"
     val changePassword = s"$root/api/auth/users/password"
     val postJob        = s"$root/api/jobs/create"
+    val jobs           = s"$root/api/jobs"
   }
 
   object Cookies {

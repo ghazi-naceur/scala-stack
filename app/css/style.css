@@ -29,3 +29,30 @@
 .aux-link {
     display: block; /* to put element in a new line */
 }
+
+.jobs-container {
+    display: flex;
+    flex-direction: column; /* displaying card element one below the other */
+    align-items: stretch; /* all cards occupy the entire width of their parent element */
+}
+
+.job-card {
+    display: flex;
+    align-items: center;
+    border: 1px solid gray;
+    border-radius: 20px;
+    margin: 10px; /* margin between 2 subsequent cards */
+    padding: 20px;
+}
+
+.job-logo {
+    width: 100px;
+}
+
+.job-card-content {
+    flex: 1; /* it will occupy the entire space */
+}
+
+.load-more-action {
+    align-self: center;
+}
