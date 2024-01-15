@@ -4,6 +4,7 @@ import cats.effect.IO
 import tyrian.*
 import tyrian.http.*
 import io.circe.Encoder
+import io.circe.parser.parse
 import io.circe.syntax.*
 import rop.jobsboard.core.Session
 
@@ -49,4 +50,21 @@ trait Endpoint[M] {
       Decoder[M](onResponse, onError) // The decoder is the response parser. It emits a message based on the error
       // state of the request (onError) or the response that gets back from the server (onSuccess).
     )
+}
+
+object Endpoint {
+
+  def onResponse[A: io.circe.Decoder, Msg](valueCallback: A => Msg, errorCallback: String => Msg): Response => Msg =
+    response =>
+      response.status match {
+        case Status(s, _) if s >= 200 && s < 300 =>
+          val json   = response.body
+          val parsed = parse(json).flatMap(_.as[A])
+          parsed match {
+            case Right(value)       => valueCallback(value)
+            case Left(parsingError) => errorCallback(s"Parsing error: $parsingError")
+          }
+        case Status(code, message) if code >= 400 && code < 600 =>
+          errorCallback(s"Error: $message")
+      }
 }

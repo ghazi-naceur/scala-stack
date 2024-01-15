@@ -3,6 +3,7 @@ package rop.jobsboard.pages
 import tyrian.*
 import cats.effect.*
 import rop.jobsboard.App
+import rop.jobsboard.components.Component
 import rop.jobsboard.pages.Page.Msg
 
 object Page {
@@ -41,22 +42,4 @@ object Page {
   }
 }
 
-abstract class Page {
-
-  // send a command upon instantiating
-  def initCmd: Cmd[IO, App.Msg]
-
-  // update content of the page
-  def update(msg: App.Msg): (Page, Cmd[IO, App.Msg])
-
-  // render the page
-  def view(): Html[App.Msg]
-}
-
-// login page
-// signup page
-// forgot password page
-// recover password page
-// job list page == home page
-// individual job page
-// not found page
+abstract class Page extends Component[App.Msg, Page]
