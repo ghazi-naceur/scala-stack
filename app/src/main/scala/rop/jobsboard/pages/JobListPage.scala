@@ -13,7 +13,8 @@ import tyrian.http.{HttpError, Method, Response, Status}
 import tyrian.{Cmd, Html}
 
 final case class JobListPage(
-    filterPanel: FilterPanel = FilterPanel(),
+    filterPanel: FilterPanel = FilterPanel(filterAction = FilterJobs(_)),
+    jobFilter: JobFilter = JobFilter(),
     jobs: List[Job] = List(),
     canLoadMore: Boolean = true,
     status: Option[Page.Status] = Some(Page.Status("Loading", Page.StatusKind.LOADING))
@@ -27,15 +28,18 @@ final case class JobListPage(
     case AddJobs(list, canLoadMore) =>
       (setSuccessStatus("Loaded").copy(jobs = this.jobs ++ list, canLoadMore = canLoadMore), Cmd.None)
     case SetErrorStatus(error) => (setErrorStatus(error), Cmd.None)
-    case LoadMoreJobs          => (this, Commands.getJobs(offset = jobs.length))
+    case LoadMoreJobs          => (this, Commands.getJobs(filter = jobFilter, offset = jobs.length))
     case msg: FilterPanel.Msg => // delegating filter panel messages to FilterPanel
       val (newFilterPanel, cmd) = filterPanel.update(msg)
       (this.copy(filterPanel = newFilterPanel), cmd)
+    case FilterJobs(selectedFilters) =>
+      val newJobFilter = createJobFilter(selectedFilters)
+      (this.copy(jobs = List(), jobFilter = newJobFilter), Commands.getJobs(filter = newJobFilter))
     case _ => (this, Cmd.None)
   }
 
   override def view(): Html[App.Msg] = {
-    div(`class` := "jobs-list-page")(
+    div(`class` := "job-list-page")(
       filterPanel.view(),
       div(`class` := "jobs-container")(
         jobs.map(job => renderJob(job)) ++ maybeRenderLoadMore
@@ -73,6 +77,17 @@ final case class JobListPage(
     )
   }
 
+  private def createJobFilter(selectedFilters: Map[String, Set[String]]) =
+    JobFilter(
+      companies = selectedFilters.getOrElse("Companies", Set()).toList,
+      locations = selectedFilters.getOrElse("Locations", Set()).toList,
+      countries = selectedFilters.getOrElse("Countries", Set()).toList,
+      seniorities = selectedFilters.getOrElse("Seniorities", Set()).toList,
+      tags = selectedFilters.getOrElse("Tags", Set()).toList,
+      maxSalary = Some(filterPanel.maxSalary),
+      remote = filterPanel.remote
+    )
+
   // removing the return type 'Page' to get rid off the reassignment error in the 'update' method
   private def setErrorStatus(message: String) =
     this.copy(status = Some(Page.Status(message, Page.StatusKind.ERROR)))
@@ -91,7 +106,8 @@ object JobListPage {
   case class AddJobs(list: List[Job], canLoadMore: Boolean) extends Msg
 
   // actions
-  case object LoadMoreJobs extends Msg
+  case object LoadMoreJobs                                         extends Msg
+  case class FilterJobs(selectedFilters: Map[String, Set[String]]) extends Msg
 
   object Endpoints {
     def getJobs(limit: Int = Constants.defaultPageSize, offset: Int = 0) = new Endpoint[Msg] {

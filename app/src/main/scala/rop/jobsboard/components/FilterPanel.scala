@@ -5,14 +5,23 @@ import rop.jobsboard.App
 import rop.jobsboard.domain.Job.JobFilter
 import rop.jobsboard.common.{Constants, Endpoint}
 import io.circe.generic.auto.*
+import org.scalajs.dom.HTMLInputElement
 import rop.jobsboard.components.FilterPanel.Commands
 import tyrian.*
 import tyrian.Html.*
+import tyrian.cmds.Logger
 import tyrian.http.*
 import tyrian.http.Method.Get
 
-final case class FilterPanel(possibleFilters: JobFilter = JobFilter(), maybeError: Option[String] = None)
-    extends Component[App.Msg, FilterPanel] {
+final case class FilterPanel(
+    possibleFilters: JobFilter = JobFilter(),
+    selectedFilters: Map[String, Set[String]] = Map(),
+    maybeError: Option[String] = None,
+    maxSalary: Int = 0,
+    remote: Boolean = false,
+    dirty: Boolean = false,
+    filterAction: Map[String, Set[String]] => App.Msg = _ => App.NoOp
+) extends Component[App.Msg, FilterPanel] {
 
   import FilterPanel.*
 
@@ -21,13 +30,30 @@ final case class FilterPanel(possibleFilters: JobFilter = JobFilter(), maybeErro
   override def update(msg: App.Msg): (FilterPanel, Cmd[IO, App.Msg]) = msg match {
     case SetPossibleFilters(possibleFilters) => (this.copy(possibleFilters = possibleFilters), Cmd.None)
     case FilterPanelError(error)             => (this.copy(maybeError = Some(error)), Cmd.None)
-    case _                                   => (this, Cmd.None)
+    case UpdateSalaryInput(salary)           => (this.copy(maxSalary = salary, dirty = true), Cmd.None)
+    case UpdateValueChecked(groupName, value, checked) =>
+      val oldGroup = selectedFilters.getOrElse(groupName, Set())
+      val newGroup =
+        if (checked) oldGroup + value
+        else oldGroup - value
+      val newGroups = selectedFilters + (groupName -> newGroup)
+      (this.copy(selectedFilters = newGroups, dirty = true), Logger.consoleLog[IO](s"Filters: $newGroups"))
+    case UpdateRemote(remote) => (this.copy(remote = remote, dirty = true), Cmd.None)
+    case TriggerFilter        => (this.copy(dirty = false), Cmd.Emit(filterAction(selectedFilters)))
+    case _                    => (this, Cmd.None)
   }
 
   override def view(): Html[App.Msg] =
     div(`class` := "filter-panel-container")(
       maybeRenderError(),
-      div(possibleFilters.toString)
+      renderSalaryFilter(),
+      renderRemoteCheckbox(),
+      renderCheckboxGroup("Companies", possibleFilters.companies),
+      renderCheckboxGroup("Locations", possibleFilters.locations),
+      renderCheckboxGroup("Countries", possibleFilters.countries),
+      renderCheckboxGroup("Tags", possibleFilters.tags),
+      renderCheckboxGroup("Seniorities", possibleFilters.seniorities),
+      renderApplyFiltersButton()
     )
 
   private def maybeRenderError() =
@@ -36,6 +62,72 @@ final case class FilterPanel(possibleFilters: JobFilter = JobFilter(), maybeErro
         div(`class` := "filter-panel-error")(e)
       }
       .getOrElse(div())
+
+  private def renderSalaryFilter() =
+    div(`class` := "filter-group")(
+      h6(`class` := "filter-group-header")("Salary"),
+      div(`class` := "filter-group-content")(
+        label(`for` := "filter-salary")("Min (in local currency)"),
+        input(
+          `type` := "number",
+          id     := "filter-salary",
+          onInput(s => UpdateSalaryInput(if (s.isEmpty) 0 else s.toInt))
+        )
+      )
+    )
+
+  private def renderCheckboxGroup(groupName: String, possibleValues: List[String]) = {
+    val selectedValues = selectedFilters.getOrElse(groupName, Set())
+    div(`class` := "filter-group")(
+      h6(`class` := "filter-group-header")(groupName),
+      div(`class` := "filter-group-content")(
+        possibleValues.map(value => renderCheckbox(groupName, value, selectedValues))
+      )
+    )
+  }
+
+  private def renderCheckbox(groupName: String, value: String, selectedValues: Set[String]) =
+    div(`class` := "filter-group-content")(
+      label(`for` := s"filter-$groupName-$value")(value),
+      input(
+        `type` := "checkbox",
+        id     := s"filter-$groupName-$value",
+        checked(selectedValues.contains(value)),
+        onEvent(
+          "change",
+          event => {
+            // Send a message to insert value as a checked value inside the groupName's Set in the Map
+            val checkbox = event.target.asInstanceOf[HTMLInputElement]
+            UpdateValueChecked(groupName, value, checkbox.checked)
+          }
+        )
+      )
+    )
+
+  private def renderRemoteCheckbox() =
+    div(`class` := "filter-group-content")(
+      label(`for` := s"filter-checkbox")("Remote"),
+      input(
+        `type` := "checkbox",
+        id     := s"filter-checkbox",
+        checked(remote),
+        onEvent(
+          "change",
+          event => {
+            // Send a message to insert value as a checked value inside the groupName's Set in the Map
+            val checkbox = event.target.asInstanceOf[HTMLInputElement]
+            UpdateRemote(checkbox.checked)
+          }
+        )
+      )
+    )
+
+  private def renderApplyFiltersButton() =
+    button(
+      `type` := "button",
+      disabled(!dirty),
+      onClick(TriggerFilter)
+    )("Apply filters")
 }
 
 object FilterPanel {
@@ -43,6 +135,14 @@ object FilterPanel {
   trait Msg                                                 extends App.Msg
   case class FilterPanelError(error: String)                extends Msg
   case class SetPossibleFilters(possibleFilters: JobFilter) extends Msg
+
+  // content
+  case class UpdateSalaryInput(salary: Int)                                         extends Msg
+  case class UpdateValueChecked(groupName: String, value: String, checked: Boolean) extends Msg
+  case class UpdateRemote(remote: Boolean)                                          extends Msg
+
+  // actions
+  case object TriggerFilter extends Msg
 
   object Endpoints {
     val getFilters: Endpoint[Msg] = new Endpoint[Msg] {
