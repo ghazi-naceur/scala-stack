@@ -102,19 +102,6 @@ abstract class FormPage(title: String, status: Option[Status]) extends Page {
       textarea(`class` := "form-control", id := uid, onInput(onChange))("")
     )
 
-  protected def renderAuxLink(location: String, text: String): Html[App.Msg] =
-    a(
-      href    := location,
-      `class` := "aux-link",
-      onEvent(
-        "click",
-        e => {
-          e.preventDefault() // native JS to prevent reloading the page
-          Router.ChangeLocation(location)
-        }
-      )
-    )(text)
-
     /*
       Check if the form has loaded (if it's present on the page) by invoking 'document.getElementById()'. If the previous
       statement didn't return anything, we need to check again, if the element is null.. and we keep rechecking while the

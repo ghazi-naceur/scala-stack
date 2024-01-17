@@ -13,6 +13,7 @@ import io.circe.parser.*
 import io.circe.generic.auto.*
 import rop.jobsboard.App
 import rop.jobsboard.common.*
+import rop.jobsboard.components.Anchors
 import rop.jobsboard.core.Session
 import rop.jobsboard.domain.auth.LoginInfo
 
@@ -51,7 +52,7 @@ final case class LoginPage(email: String = "", password: String = "", status: Op
     renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
     renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
     button(`type` := "button", onClick(AttemptLogin))("Login"),
-    renderAuxLink(Page.Urls.FORGOT_PASSWORD, "Forgot password?")
+    Anchors.renderSimpleNavLink("Forgot password?", Page.Urls.FORGOT_PASSWORD)
   )
 
   private def setErrorStatus(message: String): Page =

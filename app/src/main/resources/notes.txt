@@ -38,3 +38,53 @@ Reading a file/image using using JS and convert it to a String:
                                //    the file/image that we uploaded
     reader.onload = progressEvent => console.log(reader.result)
     reader.readAsDataURL(file) // the result will be something like: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAACXBIWXMAAA7EAAAOxAGVKw4bAAADAFBMVEVHcEwIAgHsbmFRGhQVBgUKAwIBAAAAAACNPDQJAgIDAADqaVsWBgXMQzQwDwwgCgdjIBnnTDzrZ1rqZ1nkSzvrbF/rbF/sbmHqZ1jMQjRnIRrqYVTlTD2JLCPral3sb2I4Eg6nNyulNioCAADrbV/mSzvqal3TRTbqZFXraVuMLSMuDgvraFrsb2JGFhFAFBDral3sbWDeSTnVRTa8PTBWHBYhCgcaCAZrIhsOBAPQRDXrbmGwOS3ralxJFxLsb2LrbF/rbmHraVwbCQcUBgWxOi3rbWCXMScOBAPrbmDra17kUUGtOCxtIxzpWUrpXE7pWkyUMCZoIhqrOCzqZVfrb2LWRjfrbmHrbmHrbmFCFRCvOS3sb2Lsb2J6KB/dSDncSDmILCOhNSnoW0yWMSfoVkfnVUfpXE5aHReUMCZWHBboV0joVUbpZFbrbWCaMyjrbmHSRTbsS2K5cDvnTDz///+5PTDscGPmSzvsb2K7PTDpXU7nUUHlSzv//v7RRDboWUr+/f3BPzLoU0PqZ1rqZFbXRjf+/PzbSDjoVke9PjDNQzXURTbhSjr98/K/PjHEQDLnTj7JQjTjSjrnTT3fSTrZRzjMQzT99vXxmpHIQTP0sqzdSDnzpp72vbf++vnynpXwkojug3jrbWDnUEDVRzj98fD3wr3GQTP0r6jqYlT9+Pfra17vi4D4z8rsdmrfp6HraVvyoZnwj4Xuhny8Qzf75uPtem750s7scWX03tzPRDX1t7G+ST3pWkzBU0fRf3fUhXz25eTamJD0ta/74d/57u351dK/T0P76efpYFLCVkv87OrWjITu0M3xloz4ysbnubTNVEjFXVLir6m6QDP62NXLa2Dqwr7ac2j63drov7rtfnLx19Tji4L3xsHzq6Pak4zOdm3JZVrQeG/NcWf3ycTLSDveopzldmriqaPiYVTuy8fqxsLqioDYYVXoem/109Dja1/YWkzralzqnZXPX1Tng3jsyMTpr6nkrqjgfXPolIvZioFHcEzsAQBJ7VlQAAABAHRSTlMAJNAHGjcsMgEgKQQR2gQKe/swB/eGW6Qh1n9d8Z1g9lm3tS7h/hbk04ugSTj6EVJmv+blynIPFIQS4d7BQGXeprkPQz7Hsqou2lD4pnLPffs9F4iZ7+aefJhev+zrlu/umrCfaOK6njRnM7njUt+u3+P//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////wDQPHZRHQAAC1ZJREFUeNrsW2lUU9cWDgheUBmqIg5FFEXrrH1axXmqY+fhdXjtarvePK7XtXJuCIEEQkggARKQBAKEmRBQBhlFQEDmWRBn0Tqhz6HaVtu+aa13bkCE3JvccxJ8v9x/vMI99/vuOXt/Z+99LhzOC3thL+yFWWOTp874+KMd9gs/9F6xwvvDhfY7Pvp4xtRp/x9sp0UzPrFfwWOwFfafzJ35vOGXe9hTWPyjeYLgiNCsmDguNy4mKzQiWJB3lE/9xn7J8ueHPtNjG4Q4kncilMtooSfyjsAbFno8l3lwOrAGvrlEYAb8qQUKJHAm1hxwGm+vW70fvrsgi4tgWQI4D5tWj6dPOs3dxuOHRXCRLSKMz/v73Mnjhb/FnsfPC+RiWWAen2e/ZVzgF3lC+CwutmVBCtsX2Y4/43OeJJRrlYVKeJ/NsBF+pycvM5hrtQVn8rbvtAV/6jZeXgzXBosJ422aasP0e9vy+k8nwXuutfgevKOBXJst8CjPwypZmuzJy4vjjoPF5fG2WyEJ0/bwBdxxMgF/D7YuTtvBx1p+y3cH83dgMpi8JzMC6yXzkixrM38P1io4efLx8LnqhFAWBttxPNEDF58bdTiDZX/ie2DEPx8//GU6NkHgI+vBVG98/xeAatZbvBE1cee2PPxIuwwa2R11E9q+4HnUCv1JAsXsinR0O5IDZFqhv4F68G+EuzIRdudFn1uz/2hBajbKzvQZe4biGWYF/gk9uKRBuTGMdRG2ZFqz/w8C4bkgpPwgkyVPdLK3ZgF0ADxIREwP7C1L8lyJFfg9QnC4IxnxZolFOZq8yYr8Mz0EgGsG5Ez1b5amYLUVElQsBOASqUbfN1db8ID92Pl/TDUAYKAscmSG+axisN/8tngAewKCCyD+yVaD/9D/tAX5CFPwV7ME1uBqoKScwq8V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"
+
+2- Example of markdown job description:
+
+# Job Title
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.
+
+## Key Responsibilities
+
+### Item 1
+
+- Lorem **bold** dolor sit amet
+- Consectetur _italic_ something
+- Integer nec odio
+
+### Item 2
+
+- Lorem [Link](https://www.google.com) dolor sit amet
+- Consectetur adipiscing elit
+- Integer nec odio
+
+# Job Title
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam.
+
+## Key Responsibilities
+
+### Item 1
+
+- Lorem **bold** dolor sit amet
+- Consectetur _italic_ something
+- Integer nec odio
+
+### Item 2
+
+- Lorem [Link](https://www.google.com) dolor sit amet
+- Consectetur adipiscing elit
+- Integer nec odio
+
+
+## Qualifications
+
+- Lorem ![Wikipedia logo](https://www.wikipedia.org/portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png) dolor sit amet
+- Experience in XYZ
+- Excellent communication skills
+## Qualifications
+
+- Lorem ![Wikipedia logo](https://www.wikipedia.org/portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png) dolor sit amet
+- Experience in XYZ
+- Excellent communication skills

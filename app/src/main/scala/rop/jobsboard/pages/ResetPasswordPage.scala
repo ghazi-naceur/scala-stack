@@ -9,6 +9,7 @@ import tyrian.http.{HttpError, Method, Response, Status}
 import tyrian.{Cmd, Html}
 import io.circe.parser.*
 import io.circe.generic.auto.*
+import rop.jobsboard.components.Anchors
 import rop.jobsboard.domain.auth.RecoverPasswordInfo
 import rop.jobsboard.pages.Page.StatusKind
 
@@ -43,7 +44,7 @@ final case class ResetPasswordPage(
     renderInput("Token", "token", "text", isRequired = true, UpdateToken(_)),
     renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
     button(`type` := "button", onClick(AttemptResetPassword))("Set password"),
-    renderAuxLink(Page.Urls.FORGOT_PASSWORD, "Don't have a token yet?")
+    Anchors.renderSimpleNavLink("Don't have a token yet?", Page.Urls.FORGOT_PASSWORD)
   )
 
   private def setErrorStatus(message: String): Page =

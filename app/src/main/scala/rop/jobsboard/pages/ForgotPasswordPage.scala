@@ -6,6 +6,7 @@ import rop.jobsboard.common.{Constants, Endpoint}
 import rop.jobsboard.domain.auth.ForgotPasswordInfo
 import rop.jobsboard.pages.Page.{Status, StatusKind}
 import io.circe.generic.auto.*
+import rop.jobsboard.components.Anchors
 import tyrian.Html.*
 import tyrian.http.Method.Post
 import tyrian.http.{HttpError, Method, Response}
@@ -29,7 +30,7 @@ final case class ForgotPasswordPage(email: String = "", status: Option[Page.Stat
   override protected def renderFormContent(): List[Html[App.Msg]] = List(
     renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
     button(`type` := "button", onClick(AttemptResetPassword))("Send email"),
-    renderAuxLink(Page.Urls.RESET_PASSWORD, "Have a token?")
+    Anchors.renderSimpleNavLink("Have a token?", Page.Urls.RESET_PASSWORD)
   )
 
   private def setErrorStatus(message: String): Page =
