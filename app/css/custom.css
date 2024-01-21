@@ -80,3 +80,55 @@
     color: var(--background-color);
     text-decoration: none; /* to remove the link underline */
 }
+
+.jvm-recent-jobs-card-img {
+    display: flex;
+    align-items: center;
+}
+
+/* Job page */
+
+.jvm-jobs-details-card-profile-img {
+    width: 100px;
+    height: 100px;
+    background: white;
+    display: flex;
+    align-items: center;
+    border-radius: 50%; /* 50% to make it a circle */
+    overflow: hidden; /* hide the parts that exceed/overflow the border */
+    border: 2px solid var(--background-color);
+}
+
+.jvm-jobs-details-card-profile-title .job-detail {
+    /* All CSS here will impact the child element 'job-detail' of parent element 'jvm-jobs-details-card-profile-title' */
+    color: white;
+}
+
+.jvm-jobs-details-card-profile-title .job-detail-icon {
+    /* All CSS here will impact the child element 'job-detail-icon' of parent element 'jvm-jobs-details-card-profile-title' */
+    color: var(--background-color);
+}
+
+.container-fluid {
+    padding: 0;
+}
+
+.jvm-jobs-details-top-card {
+    color: white;
+}
+
+/* See doc: https://github.com/sindresorhus/github-markdown-css */
+.markdown-body {
+    font-family: Montserrat;
+	box-sizing: border-box;
+	min-width: 200px;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 45px;
+}
+
+@media (max-width: 767px) {
+	.markdown-body {
+		padding: 15px;
+	}
+}

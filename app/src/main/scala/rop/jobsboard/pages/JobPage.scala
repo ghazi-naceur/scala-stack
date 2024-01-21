@@ -14,6 +14,37 @@ import laika.api.*
 import laika.format.*
 import rop.jobsboard.components.JobComponents
 
+import scala.scalajs.*
+import scala.scalajs.js.*            // can be used to refer to native js functions: js.native
+import scala.scalajs.js.annotation.* // annotation to be able to use any JS lib
+
+@js.native
+@JSGlobal() // This will enable 'js.native'
+class Moment extends js.Object {
+  // This class allows to call the moment lib functions from ScalaJS
+  def format(): String = js.native // This actually invokes the 'format()' function of moment lib in JS
+  // 'js.native' maps between the 'format()' function from the 'moment' lib and this 'format()' method from ScalaJS.
+  // => Surface out any JS function as a new Scala method in this class
+
+  // See documentation: https://momentjs.com/docs/#/displaying/fromnow/
+  def fromNow(): String = js.native
+}
+
+@js.native
+@JSImport("moment", JSImport.Default) // runs the JS statement: "import moment from 'moment';"
+object MomentLib extends js.Object {
+
+  // This 'apply' method is the equivalent to the JS instantiation of moment lib: "moment()" (See documentation: https://momentjs.com/docs/#/use-it/)
+  def apply(): Moment = js.native
+
+  // See documentation: https://momentjs.com/docs/#/parsing/unix-timestamp/
+  // Be aware that 'unix' function does not need an instance of Moment, so it can be invoked. In other terms:
+  // in JS: 'moment.unix(some long value)' and it's not 'moment().unix(some long value)'... that's why the unix function
+  // in defined here in the object 'MomentLib', not in the Class 'Moment'.. because 'unix' is in the same level as the
+  // apply "()" function
+  def unix(date: Long): Moment = js.native
+}
+
 final case class JobPage(
     id: String,
     maybeJob: Option[Job] = None,
@@ -42,26 +73,66 @@ final case class JobPage(
   }
 
   private def renderJobPage(job: Job) =
-    div(`class` := "job-page")(
-      div(`class` := "job-hero")(
-        img(
-          `class` := "job-logo",
-          src     := job.jobInfo.image.getOrElse(""),
-          alt     := job.jobInfo.title
+    div(`class` := "container-fluid the-rock")(
+      div(`class` := "row jvm-jobs-details-top-card")(
+        div(`class` := "col-md-12 p-0")(
+          div(`class` := "jvm-jobs-details-card-profile-img")(
+            img(
+              `class` := "img-fluid",
+              src     := job.jobInfo.image.getOrElse(""),
+              alt     := job.jobInfo.title
+            )
+          ),
+          div(`class` := "jvm-jobs-details-card-profile-title")(
+            h1(s"${job.jobInfo.company} - ${job.jobInfo.title}"),
+            div(`class` := "jvm-jobs-details-card-profile-job-details-company-and-location")(
+              JobComponents.renderJobSummary(job)
+            )
+          ),
+          div(`class` := "jvm-jobs-details-card-apply-now-btn")(
+            a(href := job.jobInfo.externalUrl, target := "blank")(
+              button(`type` := "button", `class` := "btn btn-warning")("Apply now")
+            ),
+            p(
+//              MomentLib().format() // or MomentLib.apply().format()
+              MomentLib.unix(job.date / 1000).fromNow() // 'unix' is accepting seconds, that why we're dividing by 1000
+            )
+          )
+        )
+      ),
+      div(`class` := "container-fluid")(
+        div(`class` := "container")(
+          div(`class` := "markdown-body overview-section")(
+            renderJobDescription(job)
+          )
         ),
-        h1(s"${job.jobInfo.company} - ${job.jobInfo.title}")
-      ),
-      div(`class` := "job-overview")(
-        JobComponents.renderJobSummary(job)
-      ),
-      renderJobDescription(job),
-      // 'target := "blank"' to open the link in a new tab
-      a(href := job.jobInfo.externalUrl, `class` := "job-apply-action", target := "blank")("Apply")
+        div(`class` := "container")(
+          div(`class` := "rok-last")(
+            div(`class` := "row")(
+              div(`class` := "col-md-6 col-sm-6 col-6")(
+                span(`class` := "rock-apply")("Apply for this job.")
+              ),
+              div(`class` := "col-md-6 col-sm-6 col-6")(
+                a(href := job.jobInfo.externalUrl, target := "blank")(
+                  button(`type` := "button", `class` := "rock-apply-btn")("Apply now")
+                )
+              )
+            )
+          )
+        )
+      )
     )
-  private def renderNoJobPage = status.kind match {
-    case StatusKind.LOADING => div("Loading...")
-    case StatusKind.ERROR   => div("This job doesn't exist")
-    case StatusKind.SUCCESS => div("This should never happen. Server is running, but no job is displayed...")
+
+  private def renderNoJobPage = {
+    div(`class` := "container-fluid the-rock")(
+      div(`class` := "row jvm-jobs-details-top-card")(
+        status.kind match {
+          case StatusKind.LOADING => h1("Loading...")
+          case StatusKind.ERROR   => h1("This job doesn't exist")
+          case StatusKind.SUCCESS => h1("This should never happen. Server is running, but no job is displayed...")
+        }
+      )
+    )
   }
 
   private def renderJobDescription(job: Job) = {
