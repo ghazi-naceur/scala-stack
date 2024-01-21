@@ -38,14 +38,19 @@ final case class JobListPage(
     case _ => (this, Cmd.None)
   }
 
-  override def view(): Html[App.Msg] = {
-    div(`class` := "job-list-page")(
-      filterPanel.view(),
-      div(`class` := "jobs-container")(
-        jobs.map(job => renderJob(job)) ++ maybeRenderLoadMore
+  override def view(): Html[App.Msg] =
+    section(`class` := "section-1")(
+      div(`class` := "container")(
+        div(`class` := "row jvm-recent-jobs-body")(
+          div(`class` := "col-lg-4")(
+            filterPanel.view()
+          ),
+          div(`class` := "col-lg-8")(
+            jobs.map(job => renderJob(job)) ++ maybeRenderLoadMore
+          )
+        )
       )
     )
-  }
 
   private def renderJob(job: Job) =
     div(`class` := "job-card")(
@@ -86,7 +91,7 @@ final case class JobListPage(
       countries = selectedFilters.getOrElse("Countries", Set()).toList,
       seniorities = selectedFilters.getOrElse("Seniorities", Set()).toList,
       tags = selectedFilters.getOrElse("Tags", Set()).toList,
-      maxSalary = Some(filterPanel.maxSalary),
+      maxSalary = Some(filterPanel.maxSalary).filter(_ > 0), // maxSalary has a default value: 0
       remote = filterPanel.remote
     )
 
