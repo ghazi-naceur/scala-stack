@@ -1,0 +1,82 @@
+/* CUSTOM CSS */
+
+.home-logo {
+    height: 50px;
+}
+
+.aux-link {
+    display: block; /* to put element in a new line */
+}
+
+.jobs-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column; /* displaying card element one below the other */
+    align-items: stretch; /* all cards occupy the entire width of their parent element */
+}
+
+.job-card {
+    display: flex;
+    align-items: center;
+    border: 1px solid gray;
+    border-radius: 20px;
+    margin: 10px; /* margin between 2 subsequent cards */
+    padding: 20px;
+}
+
+.job-logo {
+    width: 100px;
+}
+
+.job-card-content {
+    flex: 1; /* it will occupy the entire space */
+}
+
+.load-more-action {
+    align-self: center;
+}
+
+.job-list-page {
+    display: flex;
+}
+
+.filter-panel-container {
+    margin: 10px;
+    padding: 10px;
+    border: 1px solid green;
+    border-radius: 20px;
+}
+
+.job-hero {
+    display: flex;
+    align-items: center;
+    margin: 20px;
+}
+
+.job-detail {
+    display: flex;
+    align-items: center;
+    color: #222c;
+}
+
+.job-detail-value {
+    margin: 0 5px; /* 0 for top and bottom, 5 for right and left */
+}
+
+.load-more-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px;
+}
+
+.load-more-btn {
+    background: none;
+    border: none;
+    color: var(--background-color);
+}
+
+.job-title-link {
+    color: var(--background-color);
+    text-decoration: none; /* to remove the link underline */
+}

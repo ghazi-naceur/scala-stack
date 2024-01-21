@@ -12,6 +12,7 @@ import tyrian.http.{HttpError, Method, Response, Status}
 import tyrian.{Cmd, Html}
 import laika.api.*
 import laika.format.*
+import rop.jobsboard.components.JobComponents
 
 final case class JobPage(
     id: String,
@@ -51,7 +52,7 @@ final case class JobPage(
         h1(s"${job.jobInfo.company} - ${job.jobInfo.title}")
       ),
       div(`class` := "job-overview")(
-        renderJobDetails(job)
+        JobComponents.renderJobSummary(job)
       ),
       renderJobDescription(job),
       // 'target := "blank"' to open the link in a new tab
@@ -61,37 +62,6 @@ final case class JobPage(
     case StatusKind.LOADING => div("Loading...")
     case StatusKind.ERROR   => div("This job doesn't exist")
     case StatusKind.SUCCESS => div("This should never happen. Server is running, but no job is displayed...")
-  }
-
-  private def renderJobDetails(job: Job) = {
-
-    val fullLocationString = job.jobInfo.country match {
-      case Some(country) => s"${job.jobInfo.location}, $country"
-      case None          => job.jobInfo.location
-    }
-
-    val currency = job.jobInfo.currency.getOrElse("")
-
-    val fullSalaryString = (job.jobInfo.salaryLo, job.jobInfo.salaryHi) match {
-      case (Some(lo), Some(hi)) => s"$currency $lo-$hi"
-      case (Some(lo), None)     => s"> $currency $lo"
-      case (None, Some(hi))     => s"Up to $currency $hi"
-      case (None, None)         => "Unspecified salary"
-    }
-
-    def renderDetail(value: String) = {
-      if (value.isEmpty) div()
-      else li(`class` := "job-detail-value")(value)
-    }
-
-    div(`class` := "job-details")(
-      ul(`class` := "job-detail")(
-        renderDetail(fullLocationString),
-        renderDetail(fullSalaryString),
-        renderDetail(job.jobInfo.seniority.getOrElse("All levels")),
-        renderDetail(job.jobInfo.tags.getOrElse(List()).mkString(", "))
-      )
-    )
   }
 
   private def renderJobDescription(job: Job) = {
