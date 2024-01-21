@@ -52,7 +52,7 @@ final case class LoginPage(email: String = "", password: String = "", status: Op
     renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
     renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
     button(`type` := "button", onClick(AttemptLogin))("Login"),
-    Anchors.renderSimpleNavLink("Forgot password?", Page.Urls.FORGOT_PASSWORD)
+    Anchors.renderSimpleNavLink("Forgot password?", Page.Urls.FORGOT_PASSWORD, "auth-link")
   )
 
   private def setErrorStatus(message: String): Page =

@@ -2,6 +2,7 @@ package rop.jobsboard.pages
 import cats.effect.IO
 import org.scalajs.dom.{File, HTMLFormElement, HTMLInputElement, document}
 import rop.jobsboard.App
+import rop.jobsboard.common.Constants
 import rop.jobsboard.core.Router
 import rop.jobsboard.pages.Page.Status
 import tyrian.*
@@ -30,34 +31,49 @@ abstract class FormPage(title: String, status: Option[Status]) extends Page {
 
   // Protected API
   protected def renderForm(): Html[App.Msg] =
-    div(`class` := "form-section")(
-      div(`class` := "top-section")(
-        h1(title)
-      ),
-      // 'preventDefault()' is used to prevent refreshing the page after submitting a form, to avoid loosing state
-      form(
-        name    := "signin",
-        `class` := "form",
-        id      := pageFormId,
-        onEvent(
-          "submit",
-          e => {
-            e.preventDefault()
-            App.NoOp // won't change the state of the page.
-            // So everytime the form is submitted, we're going to send 'NoOp' which is not going to change the state of the page
-          }
+    div(`class` := "row")(
+      div(`class` := "col-md-5 p-0")(
+        // left side
+        div(`class` := "logo")(
+          img(src   := Constants.logoImage)
         )
-      )(renderFormContent()),
-      status.map(s => div(s.message)).getOrElse(div())
+      ),
+      div(`class` := "col-md-7")(
+        // right side
+        div(`class` := "form-section")(
+          div(`class` := "top-section")(
+            h1(span(title)),
+            maybeRenderErrors()
+          ),
+          // 'preventDefault()' is used to prevent refreshing the page after submitting a form, to avoid loosing state
+          form(
+            name    := "signin",
+            `class` := "form",
+            id      := pageFormId,
+            onEvent(
+              "submit",
+              e => {
+                e.preventDefault()
+                App.NoOp // won't change the state of the page.
+                // So everytime the form is submitted, we're going to send 'NoOp' which is not going to change the state of the page
+              }
+            )
+          )(renderFormContent())
+        )
+      )
     )
 
   protected def renderInput(name: String, uid: String, kind: String, isRequired: Boolean, onChange: String => App.Msg) =
-    div(`class` := "form-input")(
-      label(`for` := uid, `class` := "form-label")(
-        if (isRequired) span("*") else span(),
-        text(name)
-      ),
-      input(`type` := kind, `class` := "form-control", id := uid, onInput(onChange))
+    div(`class` := "row")(
+      div(`class` := "col-md-12")(
+        div(`class` := "form-input")(
+          label(`for` := uid, `class` := "form-label")(
+            if (isRequired) span("*") else span(),
+            text(name)
+          ),
+          input(`type` := kind, `class` := "form-control", id := uid, onInput(onChange))
+        )
+      )
     )
 
   protected def renderImageUploadInput(
@@ -101,6 +117,9 @@ abstract class FormPage(title: String, status: Option[Status]) extends Page {
       ),
       textarea(`class` := "form-control", id := uid, onInput(onChange))("")
     )
+
+  private def maybeRenderErrors() =
+    status.map(s => div(s.message)).getOrElse(div())
 
     /*
       Check if the form has loaded (if it's present on the page) by invoking 'document.getElementById()'. If the previous

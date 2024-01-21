@@ -131,4 +131,59 @@
 	.markdown-body {
 		padding: 15px;
 	}
+
+	.logo {
+	    min-height: 0 !important;
+	    height: 0 !important;
+	}
+}
+
+/* Form page */
+
+.logo {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    min-height: calc(100vh - 52px);
+    /* 'calc' is a function || '100vh' is the view height, which means the view as high as the screen || 52px is the height of the header which we got the browser */
+    /* This function allows to make the right side section of the login page as high as the whole page without the height of the header. */
+}
+
+.logo img {
+    /* position: fixed; /* it's positioned with respect to the edges of the screen, regardless of what you have on the page */
+    /* top: 50%;*/
+    margin: auto; /* it will position the logo in the middle of the screen, even when you scroll */
+}
+
+.logo::after { /* To render a backdrop for the logo, we can render a pseudo element 'after' */
+    content: ""; /* rendering empty string, instead of using 'none' which means nothing will be rendered */
+    position: absolute; /* it means that this element has a parent, in this case it's '.logo', and there we're using 'position: relative;' */
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    background-size: 300%;
+    background-image: linear-gradient( /* -45deg: from Top-Left to Bottom-Right */
+        -45deg, rgb(38, 145, 207) 0%, rgb(43, 51, 160) 25%, rgb(96, 54, 127) 50%, rgb(153, 67, 61) 100%
+    );
+    animation: animateBG 20s ease infinite;
+}
+
+.auth-link {
+    display: block; /* start at the new line to display the link below the button */
+    margin: 20px 0; /* 20px up and down, 0 right and left */
+}
+
+/* Animation */
+@keyframes animateBG {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }

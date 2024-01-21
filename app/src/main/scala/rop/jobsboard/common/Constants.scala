@@ -1,8 +1,14 @@
 package rop.jobsboard.common
 
+import scala.scalajs.js
+import scala.scalajs.js.annotation.*
 import scala.util.matching.Regex
 
 object Constants {
+
+  @js.native
+  @JSImport("/static/img/konoha.png", JSImport.Default) // adding a path to be referred to in JS
+  val logoImage: String = js.native
 
   val emailRegex: String =
     """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""

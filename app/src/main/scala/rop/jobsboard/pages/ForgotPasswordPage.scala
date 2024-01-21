@@ -30,7 +30,7 @@ final case class ForgotPasswordPage(email: String = "", status: Option[Page.Stat
   override protected def renderFormContent(): List[Html[App.Msg]] = List(
     renderInput("Email", "email", "text", isRequired = true, UpdateEmail(_)),
     button(`type` := "button", onClick(AttemptResetPassword))("Send email"),
-    Anchors.renderSimpleNavLink("Have a token?", Page.Urls.RESET_PASSWORD)
+    Anchors.renderSimpleNavLink("Have a token?", Page.Urls.RESET_PASSWORD, "auth-link")
   )
 
   private def setErrorStatus(message: String): Page =

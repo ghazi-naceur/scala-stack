@@ -44,7 +44,7 @@ final case class ResetPasswordPage(
     renderInput("Token", "token", "text", isRequired = true, UpdateToken(_)),
     renderInput("Password", "password", "password", isRequired = true, UpdatePassword(_)),
     button(`type` := "button", onClick(AttemptResetPassword))("Set password"),
-    Anchors.renderSimpleNavLink("Don't have a token yet?", Page.Urls.FORGOT_PASSWORD)
+    Anchors.renderSimpleNavLink("Don't have a token yet?", Page.Urls.FORGOT_PASSWORD, "auth-link")
   )
 
   private def setErrorStatus(message: String): Page =
