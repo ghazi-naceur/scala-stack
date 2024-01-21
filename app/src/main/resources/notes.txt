@@ -88,3 +88,29 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praes
 - Lorem ![Wikipedia logo](https://www.wikipedia.org/portal/wikipedia.org/assets/img/Wikipedia-logo-v2.png) dolor sit amet
 - Experience in XYZ
 - Excellent communication skills
+
+3- Old CSS:
+
+.nav-link {
+    color: red;
+}
+
+.header-container {
+    display: flex;  /* aligning all items on a row - horizontally */
+    align-items: center; /* aligning all items to the center */
+    border-bottom: 1px solid black; /* to differentiate the header container from the rest of the app - a stripe diving header from the rest of the page */
+}
+
+.header-nav {
+    margin-left: auto; /* pushing the navigation menu to the right as much as possible */
+}
+
+.header-links {
+    display: flex; /* aligning all items on a row - horizontally */
+    align-items: center; /* aligning all items to the center */
+}
+
+.nav-item {
+    padding: 10px;
+    list-style: none; /* to get rid off the list bullets */
+}
