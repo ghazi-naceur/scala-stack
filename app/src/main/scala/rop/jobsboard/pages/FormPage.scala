@@ -76,50 +76,67 @@ abstract class FormPage(title: String, status: Option[Status]) extends Page {
       )
     )
 
+  protected def renderToggle(name: String, uid: String, isRequired: Boolean, onChange: String => App.Msg) =
+    div(`class` := "row")(
+      div(`class` := "col-md-12 job")( // 'col-md-12' means take the whole width of the parent
+        div(`class` := "form-check form-switch")(
+          label(`for` := uid, `class` := "form-check-label")(
+            if (isRequired) span("*") else span(),
+            text(name)
+          ),
+          input(`type` := "checkbox", `class` := "form-check-input", id := uid, onInput(onChange))
+        )
+      )
+    )
+
   protected def renderImageUploadInput(
       name: String,
       uid: String,
       imageSource: Option[String],
       onChange: Option[File] => App.Msg
   ) =
-    div(`class` := "form-input")(
-      label(`for` := uid, `class` := "form-label")(name),
-      input(
-        `type`  := "file",
-        `class` := "form-control",
-        id      := uid,
-        accept  := "image/*",
-        onEvent(
-          "change",
-          e => {
-            val imageInput = e.target.asInstanceOf[HTMLInputElement]
-            val fileList   = imageInput.files
-            if (fileList.length > 0)
-              onChange(Some(fileList(0)))
-            else onChange(None)
-          }
+    div(`class` := "row")(
+      div(`class` := "col-md-12")(
+        div(`class` := "form-input")(
+          label(`for` := uid, `class` := "form-label")(name),
+          input(
+            `type`  := "file",
+            `class` := "form-control",
+            id      := uid,
+            accept  := "image/*",
+            onEvent(
+              "change",
+              e => {
+                val imageInput = e.target.asInstanceOf[HTMLInputElement]
+                val fileList   = imageInput.files
+                if (fileList.length > 0)
+                  onChange(Some(fileList(0)))
+                else onChange(None)
+              }
+            )
+          )
         )
-      ),
-      img(
-        id     := "preview",
-        src    := imageSource.getOrElse(""),
-        alt    := "Preview",
-        width  := "100",
-        height := "100"
       )
     )
 
   protected def renderTextArea(name: String, uid: String, isRequired: Boolean, onChange: String => App.Msg) =
-    div(`class` := "form-input")(
-      label(`for` := uid, `class` := "form-label")(
-        if (isRequired) span("*") else span(),
-        text(name)
-      ),
-      textarea(`class` := "form-control", id := uid, onInput(onChange))("")
+    div(`class` := "row")(
+      div(`class` := "col-md-12")(
+        div(`class` := "form-input")(
+          label(`for` := uid, `class` := "form-label")(
+            if (isRequired) span("*") else span(),
+            text(name)
+          ),
+          textarea(`class` := "form-control", id := uid, onInput(onChange))("")
+        )
+      )
     )
 
   private def maybeRenderErrors() =
-    status.map(s => div(s.message)).getOrElse(div())
+    status
+      .filter(s => s.kind == Page.StatusKind.ERROR && s.message.nonEmpty)
+      .map(s => div(`class` := "form-errors")(s.message))
+      .getOrElse(div())
 
     /*
       Check if the form has loaded (if it's present on the page) by invoking 'document.getElementById()'. If the previous

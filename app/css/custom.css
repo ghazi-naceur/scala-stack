@@ -152,7 +152,9 @@
 
 .logo img {
     /* position: fixed; /* it's positioned with respect to the edges of the screen, regardless of what you have on the page */
-    /* top: 50%;*/
+    position: sticky; /* if we scroll down, and the image goes upwards than this element with stick to the screen */
+    top: 0;
+    bottom: 0;
     margin: auto; /* it will position the logo in the middle of the screen, even when you scroll */
 }
 
@@ -173,6 +175,34 @@
 .auth-link {
     display: block; /* start at the new line to display the link below the button */
     margin: 20px 0; /* 20px up and down, 0 right and left */
+}
+
+/* Post Job Page */
+
+textarea.form-control{
+    min-height: 200px;
+    font-family: monospace; /* 'monospace' font for markdown */
+}
+
+.job {
+    padding: 0 12px;
+}
+
+.job label {
+    font-size: 18px;
+    font-weight: 500; /* semi-bold font */
+}
+
+.form-errors {
+    border: 1px solid red;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.top-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* Animation */
