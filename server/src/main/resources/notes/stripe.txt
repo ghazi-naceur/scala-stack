@@ -16,3 +16,13 @@
 10- Copy the payment link: https://buy.stripe.com/test_aEU9Et8fz3hn5689AA
 11- Default "Card information" for testing is: 4242 4242 4242 4242
     Once you pay, you will see the payment events in the console of "stripe listen"
+
+
+
+Invoke Stripe endpoint:
+    http post localhost:4041/api/jobs/promoted < server/src/main/resources/payloads/jobinfo.json
+    ==> Result:
+        "https://checkout.stripe.com/c/pay/cs_test_a1kFTBxbxrlmLS7unyZHfrC6xbjNOEIjiAM7OPah81JrlsUn8IpTY0XUcO#fidkdWxOYHwnPyd1blpxYHZxWjA0SmdWTG1MRmd3R2BTTHxvUDxVfG9DbmQ9VWNyQktGRkFLd3F1XEZgVUs2VUpmTmFwNEdjY05QTX9gdkNSYFBHNHNISzFLbjVDRGJpbVdCaU89S0lfcjx%2FNTVpPWNAXH0zYycpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPyd2bGtiaWBabHFgaCcpJ2BrZGdpYFVpZGZgbWppYWB3dic%2FcXdwYHgl"
+    Once you fill in the credit card details in the previous link and confirm the payment, you will notice that redirect
+    page will work to the newly created job (by invoking post localhost:4041/api/jobs/promoted) and some events are
+    being displayed in the "stripe listen" terminal

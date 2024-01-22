@@ -22,7 +22,8 @@ import rop.jobsboard.domain.security.{allRoles, AuthRoute, Authenticator, Secure
 import rop.jobsboard.http.validation.syntax.*
 import tsec.authentication.*
 
-class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
+class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F], stripe: Stripe[F])
+    extends HttpValidationDsl[F] {
 
   object OffsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
   object LimitQueryParam  extends OptionalQueryParamDecoderMatcher[Int]("limit")
@@ -89,7 +90,20 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
     }
   }
 
-  val unauthedRoutes: HttpRoutes[F] = allFiltersRoute <+> allJobsRoute <+> findJobRoute
+  // Stripe endpoints
+  // POST /jobs/promoted { jobInfo }
+  private val promotedJobRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "promoted" =>
+    req.validate[JobInfo] { jobInfo =>
+      for {
+        jobId    <- jobs.create("todo@rop.com", jobInfo)
+        session  <- stripe.createCheckoutSession(jobId.toString, "todo@rop.com")
+        response <- session.map(s => Ok(s.getUrl())).getOrElse(NotFound())
+        // 'getUrl': the url of the checkout page that we will surface out back to the user
+      } yield response
+    }
+  }
+
+  val unauthedRoutes: HttpRoutes[F] = promotedJobRoute <+> allFiltersRoute <+> allJobsRoute <+> findJobRoute
   val authedRoutes: HttpRoutes[F] = SecuredHandler[F].liftService(
     createJobRoute.restrictedTo(allRoles)
       |+| updateJobRoute.restrictedTo(allRoles)
@@ -102,5 +116,5 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
 }
 
 object JobRoutes {
-  def apply[F[_]: Concurrent: Logger: SecuredHandler](jobs: Jobs[F]) = new JobRoutes[F](jobs)
+  def apply[F[_]: Concurrent: Logger: SecuredHandler](jobs: Jobs[F], stripe: Stripe[F]) = new JobRoutes[F](jobs, stripe)
 }
