@@ -1,0 +1,18 @@
+
+
+1- Go to https://dashboard.stripe.com/test/apikeys
+2- Copy "Secret key" and paste in application.conf
+3- Create a product: https://dashboard.stripe.com/test/products/create
+4- Copy the "API ID" for this product and paste in application.conf
+5- Install Stripe CLI: https://stripe.com/docs/stripe-cli
+    curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg
+    echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee -a /etc/apt/sources.list.d/stripe.list
+    sudo apt update
+    sudo apt install stripe
+6- "stripe login --api-key your-secret-key"
+7- "stripe listen" : which will listen to all events related to your account (someone bought something ...etc)
+8- Click on "Create payment link" in "https://dashboard.stripe.com/test/products/prod_PQJ7atHy0cStli"
+9- Click "Create link"
+10- Copy the payment link: https://buy.stripe.com/test_aEU9Et8fz3hn5689AA
+11- Default "Card information" for testing is: 4242 4242 4242 4242
+    Once you pay, you will see the payment events in the console of "stripe listen"
