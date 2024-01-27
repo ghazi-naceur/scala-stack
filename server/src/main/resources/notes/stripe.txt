@@ -26,3 +26,6 @@ Invoke Stripe endpoint:
     Once you fill in the credit card details in the previous link and confirm the payment, you will notice that redirect
     page will work to the newly created job (by invoking post localhost:4041/api/jobs/promoted) and some events are
     being displayed in the "stripe listen" terminal
+
+1- Go to Webhooks > Add an endpoint > Test in a local environment
+2- stripe listen --forward-to localhost:4041/api/jobs/webhook

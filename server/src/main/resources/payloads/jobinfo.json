@@ -2,7 +2,7 @@
   "company" : "EnisoCorp",
   "title" : "Scala developer",
   "description" : "This is a job description",
-  "externalUrl" : "https://google.com",
-  "remote" : true,
+  "externalUrl" : "https://www.google.com",
+  "remote" : false,
   "location" : "Amsterdam"
 }

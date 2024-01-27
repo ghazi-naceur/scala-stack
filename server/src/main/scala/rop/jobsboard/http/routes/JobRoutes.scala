@@ -18,9 +18,10 @@ import rop.jobsboard.domain.Job.*
 import rop.jobsboard.http.responses.*
 import rop.jobsboard.core.*
 import rop.jobsboard.domain.pagination.Pagination
-import rop.jobsboard.domain.security.{allRoles, AuthRoute, Authenticator, SecuredHandler, restrictedTo}
+import rop.jobsboard.domain.security.{AuthRoute, Authenticator, SecuredHandler, adminOnly, allRoles, restrictedTo}
 import rop.jobsboard.http.validation.syntax.*
 import tsec.authentication.*
+import org.typelevel.ci.CIStringSyntax
 
 class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F], stripe: Stripe[F])
     extends HttpValidationDsl[F] {
@@ -92,20 +93,36 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
 
   // Stripe endpoints
   // POST /jobs/promoted { jobInfo }
-  private val promotedJobRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "promoted" =>
-    req.validate[JobInfo] { jobInfo =>
+  private val promotedJobRoute: AuthRoute[F] = { case req @ POST -> Root / "promoted" asAuthed user =>
+    req.request.validate[JobInfo] { jobInfo =>
       for {
-        jobId    <- jobs.create("todo@rop.com", jobInfo)
-        session  <- stripe.createCheckoutSession(jobId.toString, "todo@rop.com")
+        jobId    <- jobs.create(user.email, jobInfo)
+        session  <- stripe.createCheckoutSession(jobId.toString, user.email)
         response <- session.map(s => Ok(s.getUrl())).getOrElse(NotFound())
         // 'getUrl': the url of the checkout page that we will surface out back to the user
       } yield response
     }
   }
 
-  val unauthedRoutes: HttpRoutes[F] = promotedJobRoute <+> allFiltersRoute <+> allJobsRoute <+> findJobRoute
+  private val promotedJobWebhook: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "webhook" =>
+    val stripeSignatureHeader = req.headers.get(ci"Stripe-Signature").flatMap(_.toList.headOption).map(_.value)
+    stripeSignatureHeader match {
+      case Some(signature) =>
+        for {
+          payload <- req.bodyText.compile.string
+          handled <- stripe.handleWebhookEvent(payload, signature, jobId => jobs.activate(UUID.fromString(jobId)))
+          response <-
+            if (handled.nonEmpty) Ok()
+            else NoContent()
+        } yield response
+      case None => Logger[F].info("Got webhook event with no Stripe signature") *> Forbidden("No Stripe signature")
+    }
+  }
+
+  val unauthedRoutes: HttpRoutes[F] = allFiltersRoute <+> allJobsRoute <+> findJobRoute <+> promotedJobWebhook
   val authedRoutes: HttpRoutes[F] = SecuredHandler[F].liftService(
-    createJobRoute.restrictedTo(allRoles)
+    createJobRoute.restrictedTo(adminOnly)
+      |+| promotedJobRoute.restrictedTo(allRoles)
       |+| updateJobRoute.restrictedTo(allRoles)
       |+| deleteJobRoute.restrictedTo(allRoles)
   )
