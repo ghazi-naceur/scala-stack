@@ -5,6 +5,7 @@ import rop.jobsboard.App
 import rop.jobsboard.core.Router.*
 import tyrian.Cmd
 import fs2.dom.History
+import org.scalajs.dom.window
 
 // location is the sub-url after the base path:
 // jobsboard.com/'login'
@@ -21,13 +22,20 @@ case class Router private (location: String, history: History[IO, String]) {
 
         (this.copy(location = newLocation), historyCommand)
       }
-    case _ => (this, Cmd.None) // todo to check external redirects
+    case ExternalRedirect(location) =>
+      window.location.href = maybeCleanUrl(location)
+      (this, Cmd.None) // it doesn't matter what we set here, as the redirection will occur in the previous statement
   }
 
   def goto[M](location: String): Cmd[IO, M] =
     Cmd.SideEffect[IO] {
       history.pushState(location, location)
     }
+
+  def maybeCleanUrl(url: String) =
+    if (url.startsWith("\""))
+      url.substring(1, url.length() - 1)
+    else url
 }
 
 object Router {

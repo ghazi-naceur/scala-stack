@@ -92,6 +92,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
         other,
         active
       FROM jobs
+      WHERE active = true
     """
       .query[Job]
       .to[List]
@@ -154,8 +155,9 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
         Fragments.or(tags.toList.map(tag => fr"$tag=any(tags)"): _*)
       ),
       filter.maxSalary.map(salary => fr"salaryHi > $salary"),
-      filter.remote.some.filter(identity).map(remote => fr"remote=$remote")
       // .filter(identity) == only remote jobs are being filtered
+      filter.remote.some.filter(identity).map(remote => fr"remote=$remote"),
+      fr"active = true".some
     )
 
     val paginationFragment: Fragment =
@@ -194,6 +196,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
             active
          FROM jobs
          WHERE id = $id
+         AND active = true
        """
       .query[Job]
       .option
@@ -244,11 +247,11 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
 
     val query = sql"""
        SELECT
-         ARRAY(SELECT DISTINCT(company) FROM jobs) AS companies,
-         ARRAY(SELECT DISTINCT(location) FROM jobs) AS locations,
-         ARRAY(SELECT DISTINCT(country) FROM jobs WHERE country IS NOT NULL) AS countries,
-         ARRAY(SELECT DISTINCT(seniority) FROM jobs WHERE seniority IS NOT NULL) AS seniorities,
-         ARRAY(SELECT DISTINCT(UNNEST(tags)) FROM jobs) AS tags,
+         ARRAY(SELECT DISTINCT(company) FROM jobs WHERE active = true) AS companies,
+         ARRAY(SELECT DISTINCT(location) FROM jobs WHERE active = true) AS locations,
+         ARRAY(SELECT DISTINCT(country) FROM jobs WHERE country IS NOT NULL AND active = true) AS countries,
+         ARRAY(SELECT DISTINCT(seniority) FROM jobs WHERE seniority IS NOT NULL AND active = true) AS seniorities,
+         ARRAY(SELECT DISTINCT(UNNEST(tags)) FROM jobs WHERE active = true) AS tags,
          MAX(salaryHi),
          false
        FROM jobs

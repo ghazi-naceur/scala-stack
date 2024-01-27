@@ -29,7 +29,8 @@ trait JobFixture {
       None,
       "Senior".some,
       None
-    )
+    ),
+    active = true
   )
 
   val InvalidJob: Job = Job(
@@ -58,7 +59,8 @@ trait JobFixture {
       "http://www.some.com/logo.png".some,
       "Highest".some,
       "Some additional info".some
-    )
+    ),
+    active = true
   )
 
   val CorpNewJob: JobInfo = JobInfo(

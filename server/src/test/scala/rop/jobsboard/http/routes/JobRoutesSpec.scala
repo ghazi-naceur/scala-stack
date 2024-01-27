@@ -19,6 +19,9 @@ import rop.jobsboard.core.Jobs
 import rop.jobsboard.domain.Job.*
 import org.scalatest.freespec.*
 import rop.jobsboard.domain.pagination.Pagination
+import rop.jobsboard.core.{LiveStripe, Stripe}
+import com.stripe.model.checkout.Session
+import com.stripe.param.checkout.SessionCreateParams
 
 import java.util.UUID
 class JobRoutesSpec
@@ -48,15 +51,26 @@ class JobRoutesSpec
       if (id == TestJobUuid) IO.pure(Some(UpdatedTestJob))
       else IO.pure(None)
 
+    override def activate(id: UUID): IO[Int] = IO.pure(1)
+
     override def delete(id: UUID): IO[Int] =
       if (id == TestJobUuid) IO.pure(1)
       else IO.pure(0)
 
     override def possibleFilters(): IO[JobFilter] = IO(defaultJobFilter)
+
+  }
+
+  val stripe: Stripe[IO] = new LiveStripe[IO]("key", "price", "example.com/success", "example.com/fail", "webhooksecret") {
+    override def createCheckoutSession(jobId: String, userEmail: String): IO[Option[Session]] =
+      IO.pure(Some(Session.create(SessionCreateParams.builder().build())))
+
+    override def handleWebhookEvent[A](payload: String, signature: String, action: String => IO[A]): IO[Option[A]] =
+      IO.pure(None)
   }
 
   given logger: Logger[IO]      = Slf4jLogger.getLogger[IO]
-  val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs).routes
+  val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs, stripe).routes
 
   "JobRoutes" - {
     "should return a job with a given id" in {

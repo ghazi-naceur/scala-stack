@@ -64,11 +64,24 @@ class JobsSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with DoobieS
       }
     }
 
-    "should create a new job" in {
+    "should create a new job, initially inactive" in {
       transactor.use { xa =>
         val program = for {
           jobs      <- LiveJobs[IO](xa)
           jobId     <- jobs.create("someone@gmail.com", TestNewJobInfo)
+          retrieved <- jobs.find(jobId)
+        } yield retrieved
+
+        program.asserting(_.map(_.jobInfo) shouldBe None)
+      }
+    }
+
+    "should activate a new job" in {
+      transactor.use { xa =>
+        val program = for {
+          jobs      <- LiveJobs[IO](xa)
+          jobId     <- jobs.create("someone@gmail.com", TestNewJobInfo)
+          _         <- jobs.activate(jobId)
           retrieved <- jobs.find(jobId)
         } yield retrieved
 

@@ -3,7 +3,7 @@ import cats.effect.IO
 import cats.syntax.traverse.*
 import rop.jobsboard.App
 import rop.jobsboard.common.{Constants, Endpoint}
-import rop.jobsboard.core.Session
+import rop.jobsboard.core.{Router, Session}
 import rop.jobsboard.domain.Job.JobInfo
 import org.scalajs.dom.{File, FileReader}
 import io.circe.generic.auto.*
@@ -36,11 +36,6 @@ case class PostJobPage(
 
   import PostJobPage.*
 
-  override def view(): Html[App.Msg] = {
-    if (Session.isActive) super.view()
-    else renderInvalidPage
-  }
-
   override def update(msg: App.Msg): (Page, Cmd[IO, App.Msg]) = msg match {
     case UpdateCompany(c)               => (this.copy(company = c), Cmd.None)
     case UpdateTitle(t)                 => (this.copy(title = t), Cmd.None)
@@ -60,7 +55,7 @@ case class PostJobPage(
     case AttemptPostJob =>
       (
         this,
-        Commands.postJob(
+        Commands.postJob(promoted = true)(
           company,
           title,
           description,
@@ -82,29 +77,31 @@ case class PostJobPage(
     case _                     => (this, Cmd.None)
   }
 
-  override protected def renderFormContent(): List[Html[App.Msg]] = List(
-    renderInput("Company", "company", "text", isRequired = true, UpdateCompany(_)),
-    renderInput("Title", "title", "text", isRequired = true, UpdateTitle(_)),
-    renderTextArea("Description", "description", isRequired = true, UpdateDescription(_)),
-    renderInput("ExternalUrl", "externalUrl", "text", isRequired = true, UpdateExternalUrl(_)),
-    renderToggle("Remote", "remote", isRequired = true, _ => ToggleRemote),
-    renderInput("Location", "location", "text", isRequired = true, UpdateLocation(_)),
-    renderInput("Salary low", "salaryLo", "number", isRequired = false, value => UpdateSalaryLo(parseNumber(value))),
-    renderInput("Salary high", "salaryHi", "number", isRequired = false, value => UpdateSalaryHi(parseNumber(value))),
-    renderInput("Currency", "currency", "text", isRequired = false, UpdateCurrency(_)),
-    renderInput("Country", "country", "text", isRequired = false, UpdateCountry(_)),
-    renderImageUploadInput("Logo", "logo", image, UpdateImageFile(_)),
-    renderInput("Tags", "tags", "text", isRequired = false, UpdateTags(_)),
-    renderInput("Seniority", "seniority", "text", isRequired = false, UpdateSeniority(_)),
-    renderInput("Other", "other", "text", isRequired = false, UpdateOther(_)),
-    button(`type` := "button", onClick(AttemptPostJob))("Post job")
-  )
+  override protected def renderFormContent(): List[Html[App.Msg]] = {
+    if (!Session.isActive) renderInvalidContents()
+    else
+      List(
+        renderInput("Company", "company", "text", isRequired = true, UpdateCompany(_)),
+        renderInput("Title", "title", "text", isRequired = true, UpdateTitle(_)),
+        renderTextArea("Description", "description", isRequired = true, UpdateDescription(_)),
+        renderInput("ExternalUrl", "externalUrl", "text", isRequired = true, UpdateExternalUrl(_)),
+        renderToggle("Remote", "remote", isRequired = true, _ => ToggleRemote),
+        renderInput("Location", "location", "text", isRequired = true, UpdateLocation(_)),
+        renderInput("Salary low", "salaryLo", "number", isRequired = false, value => UpdateSalaryLo(parseNumber(value))),
+        renderInput("Salary high", "salaryHi", "number", isRequired = false, value => UpdateSalaryHi(parseNumber(value))),
+        renderInput("Currency", "currency", "text", isRequired = false, UpdateCurrency(_)),
+        renderInput("Country", "country", "text", isRequired = false, UpdateCountry(_)),
+        renderImageUploadInput("Logo", "logo", image, UpdateImageFile(_)),
+        renderInput("Tags", "tags", "text", isRequired = false, UpdateTags(_)),
+        renderInput("Seniority", "seniority", "text", isRequired = false, UpdateSeniority(_)),
+        renderInput("Other", "other", "text", isRequired = false, UpdateOther(_)),
+        button(`type` := "button", onClick(AttemptPostJob))("Post job")
+      )
+  }
 
-  private def renderInvalidPage =
-    div(
-      h1("Post job"),
-      div("You need to be logged in to post a job")
-    )
+  private def renderInvalidContents() = List(
+    p(`class` := "form-text")("You need to be logged in to post a job")
+  )
 
   private def setErrorStatus(message: String): Page =
     this.copy(status = Some(Page.Status(message, Page.StatusKind.ERROR)))
@@ -146,30 +143,21 @@ object PostJobPage {
 
   object Endpoints {
     val postJob: Endpoint[Msg] = new Endpoint[Msg] {
-      override val location: String = Constants.Endpoints.postJob
-      override val method: Method   = Post
-      override val onResponse: Response => Msg = response =>
-        response.status match {
-          case Status(s, _) if s >= 200 && s < 300 =>
-            val jobId = response.body
-            PostJobSuccess(jobId)
-          case Status(401, _) =>
-            PostJobError("You are not authorized to post a job.")
-          case Status(s, _) if s >= 400 && s < 500 =>
-            val jsonError = response.body
-            val parsed    = parse(jsonError).flatMap(_.hcursor.get[String]("error"))
-            parsed match {
-              case Right(errorFromServer) => PostJobError(errorFromServer)
-              case Left(error)            => PostJobError(s"Error $error.")
-            }
-          case _ => PostJobError("Unknown reply from server.")
-        }
-      override val onError: HttpError => Msg = e => PostJobError(e.toString)
+      override val location: String            = Constants.Endpoints.postJob
+      override val method: Method              = Post
+      override val onResponse: Response => Msg = Endpoint.onResponseText(PostJobSuccess(_), PostJobError(_))
+      override val onError: HttpError => Msg   = e => PostJobError(e.toString)
+    }
+    val postJobPromoted: Endpoint[App.Msg] = new Endpoint[App.Msg] {
+      override val location: String                = Constants.Endpoints.postJobPromoted
+      override val method: Method                  = Post
+      override val onResponse: Response => App.Msg = Endpoint.onResponseText(Router.ExternalRedirect(_), PostJobError(_))
+      override val onError: HttpError => App.Msg   = e => PostJobError(e.toString)
     }
   }
 
   object Commands {
-    def postJob(
+    def postJob(promoted: Boolean = true)(
         company: String,
         title: String,
         description: String,
@@ -184,24 +172,31 @@ object PostJobPage {
         image: Option[String],
         seniority: Option[String],
         other: Option[String]
-    ): Cmd[IO, Msg] = Endpoints.postJob.callAuthorized(
-      JobInfo(
-        company = company,
-        title = title,
-        description = description,
-        externalUrl = externalUrl,
-        remote = remote,
-        location = location,
-        salaryLo = salaryLo,
-        salaryHi = salaryHi,
-        currency = currency,
-        country = country,
-        tags = tags.map(_.split(",").map(_.trim).toList),
-        image = image,
-        seniority = seniority,
-        other = other
+    ): Cmd[IO, App.Msg] = {
+
+      val endpoint =
+        if (promoted) Endpoints.postJobPromoted
+        else Endpoints.postJob
+
+      endpoint.callAuthorized(
+        JobInfo(
+          company = company,
+          title = title,
+          description = description,
+          externalUrl = externalUrl,
+          remote = remote,
+          location = location,
+          salaryLo = salaryLo,
+          salaryHi = salaryHi,
+          currency = currency,
+          country = country,
+          tags = tags.map(_.split(",").map(_.trim).toList),
+          image = image,
+          seniority = seniority,
+          other = other
+        )
       )
-    )
+    }
 
     def loadFile(potentialFile: Option[File]) = {
       Cmd.Run[IO, Option[String], Msg](
