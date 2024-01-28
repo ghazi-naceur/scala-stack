@@ -10,6 +10,7 @@ import org.typelevel.log4cats.Logger
 import rop.jobsboard.config.StripeConfig
 import rop.jobsboard.logging.syntax.*
 
+import java.util.Optional
 import scala.util.Try
 import scala.jdk.OptionConverters.*
 
@@ -83,10 +84,13 @@ class LiveStripe[F[_]: MonadThrow: Logger](
       .flatMap { event =>
         event.getType() match {
           case "checkout.session.completed" =>
-            event
-              .getDataObjectDeserializer()
-              .getObject()                   // Optional[Deserializer]
-              .toScala                       // Option[Deserializer]
+//            event
+//              .getDataObjectDeserializer()
+//              .getObject()                  // Optional[Deserializer]
+//              .toScala                      // Option[Deserializer]
+            Optional
+              .of(event.getData().getObject)
+              .toScala
               .map(_.asInstanceOf[Session])  // Option[Session]
               .map(_.getClientReferenceId()) // Option[String] storing the job identifier
               .map(action)                   // Option[F[A]] => performing the effect
@@ -104,7 +108,10 @@ class LiveStripe[F[_]: MonadThrow: Logger](
         }
       }
       .logError(e => s"Something else went wrong: $e")
-      .recover { case _ => None }
+      .recover { case thr =>
+        Logger[F].info(s"Error occurred: ${thr.toString}")
+        None
+      }
   }
 }
 
