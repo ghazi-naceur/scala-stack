@@ -22,8 +22,10 @@ import rop.jobsboard.domain.pagination.Pagination
 import rop.jobsboard.core.{LiveStripe, Stripe}
 import com.stripe.model.checkout.Session
 import com.stripe.param.checkout.SessionCreateParams
+import fs2.Stream
 
 import java.util.UUID
+
 class JobRoutesSpec
     extends AsyncFreeSpec
     with AsyncIOSpec
@@ -37,7 +39,7 @@ class JobRoutesSpec
   val jobs: Jobs[IO] = new Jobs[IO] {
     override def create(ownerEmail: String, jobInfo: JobInfo): IO[UUID] = IO.pure(NewJobUuid)
 
-    override def all(): IO[List[Job]] = IO.pure(List(TestJob))
+    override def all(): Stream[IO, Job] = fs2.Stream.emit(TestJob)
 
     override def all(filter: JobFilter, pagination: Pagination): IO[List[Job]] =
       if (filter.remote) IO.pure(List())

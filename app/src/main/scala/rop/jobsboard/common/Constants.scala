@@ -10,12 +10,17 @@ object Constants {
   @JSImport("/static/img/konoha.png", JSImport.Default) // adding a path to be referred to in JS
   val logoImage: String = js.native
 
+  @js.native
+  @JSImport("/static/img/briefcase.png", JSImport.Default) // adding a path to be referred to in JS
+  val jobImagePlaceholder: String = js.native
+
   val emailRegex: String =
     """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
 
   val ADMIN_EMAIL = "admin@gmail.com"
 
-  val defaultPageSize = 20
+  val defaultPageSize   = 20
+  val jobAdvertPriceEUR = 99
 
   object Endpoints {
     val root            = "http://localhost:4041"

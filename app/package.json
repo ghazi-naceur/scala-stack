@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "parcel index.html --no-cache --dist-dir dist --log-level info -p 46142",
+    "start": "parcel index.html --no-cache --dist-dir dist --log-level info -p 46143",
     "build": "parcel build index.html --dist-dir dist --log-level info"
   },
   "devDependencies": {

@@ -5,7 +5,7 @@ import rop.jobsboard.App
 import rop.jobsboard.common.{Constants, Endpoint}
 import rop.jobsboard.core.{Router, Session}
 import rop.jobsboard.domain.Job.JobInfo
-import org.scalajs.dom.{File, FileReader}
+import org.scalajs.dom.{CanvasRenderingContext2D, File, FileReader, HTMLCanvasElement, HTMLImageElement, document}
 import io.circe.generic.auto.*
 import io.circe.parser.*
 import tyrian.*
@@ -14,6 +14,7 @@ import tyrian.cmds.Logger
 import tyrian.http.*
 import tyrian.http.Method.Post
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 case class PostJobPage(
@@ -95,7 +96,9 @@ case class PostJobPage(
         renderInput("Tags", "tags", "text", isRequired = false, UpdateTags(_)),
         renderInput("Seniority", "seniority", "text", isRequired = false, UpdateSeniority(_)),
         renderInput("Other", "other", "text", isRequired = false, UpdateOther(_)),
-        button(`type` := "button", onClick(AttemptPostJob))("Post job")
+        button(`class` := "form-submit-btn", `type` := "button", onClick(AttemptPostJob))(
+          "Post job - €" + Constants.jobAdvertPriceEUR
+        )
       )
   }
 
@@ -198,7 +201,7 @@ object PostJobPage {
       )
     }
 
-    def loadFile(potentialFile: Option[File]) = {
+    def loadFileBasic(potentialFile: Option[File]) = {
       Cmd.Run[IO, Option[String], Msg](
         /*
         For the logo upload feature, and since reading a file using JS is asynchronous, we need to use 'IO.async_' in Cats Effect
@@ -219,5 +222,62 @@ object PostJobPage {
         }
       )(UpdateImage(_))
     }
+
+    def loadFile(potentialFile: Option[File]) = {
+      Cmd.Run[IO, Option[String], Msg](
+        /*
+        For the logo upload feature, and since reading a file using JS is asynchronous, we need to use 'IO.async_' in Cats Effect
+        that will allow us to surface an asynchronous computation based on callback (which the read file method from JS) into Cats Effect
+         */
+        // run the effect here that return an Option[String]
+        // Option[File] => Option[String] => Msg
+        // Option[File].traverse(file => IO[String]) => IO[Option[String]] => Msg
+        potentialFile.traverse { file =>
+          IO.async_ { callback =>
+            // create a reader
+            val reader = new FileReader
+            // set the onload method
+            reader.onload = _ => {
+              // >>>>> downsize image:
+              // create a new img tag
+              val img = document.createElement("img").asInstanceOf[HTMLImageElement]
+              img.addEventListener(
+                "load",
+                _ => {
+                  // create a canvas on that image
+                  val canvas          = document.createElement("canvas").asInstanceOf[HTMLCanvasElement]
+                  val context         = canvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]
+                  val (width, height) = computeDimensions(img.width, img.height)
+                  canvas.width = width
+                  canvas.height = height
+                  // force the browser to 'draw' the image on a fixed width/height
+                  context.drawImage(img, 0, 0, canvas.width, canvas.height)
+                  // call callback(canvas.data)
+                  callback(Right(canvas.toDataURL(file.`type`))) // Creates the "png/base64..."
+                }
+              )
+              img.src = reader.result.toString
+            }
+            // trigger the reader
+            reader.readAsDataURL(file)
+          }
+        }
+      )(UpdateImage(_))
+    }
+
+    private def computeDimensions(width: Int, height: Int): (Int, Int) =
+      if (width >= height) { // Make sure to set '>=', not '>', otherwise we'll get an infinite loop for square pictures
+        val ratio = width * 1.0 / 256
+        val w     = width / ratio
+        val h     = height / ratio
+        (w.toInt, h.toInt)
+      } else {
+//        val ratio = height * 1.0 / 256
+//        val h     = height / ratio
+//        val w     = width / ratio
+//        (w.toInt, h.toInt)
+        val (h, w) = computeDimensions(height, width)
+        (w, h)
+      }
   }
 }

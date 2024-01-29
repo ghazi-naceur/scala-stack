@@ -28,8 +28,8 @@ final case class Session(email: Option[String] = None, token: Option[String] = N
         cookieCmd |+| routingCmd
       )
 
-    case CheckToken      => (this, Commands.checkToken)
-    case KeepToken       => (this, Cmd.None)
+    case CheckToken => (this, Commands.checkToken)
+    case KeepToken  => (this, Cmd.None)
 
     case Logout =>
       // trigger an authorized http to the backend
@@ -41,8 +41,6 @@ final case class Session(email: Option[String] = None, token: Option[String] = N
         this.copy(email = None, token = None),
         Commands.clearAllSessionCookies() |+| Cmd.Emit(Router.ChangeLocation(Page.Urls.HOME))
       )
-
-    // todo add case LogoutFailure
   }
 
   def initCmd: Cmd[IO, Msg] = {
@@ -77,10 +75,10 @@ object Session {
 
   object Endpoints {
     val logout: Endpoint[Msg] = new Endpoint[Msg] {
-      override val location: String           = Constants.Endpoints.logout
-      override val method: Method             = Post
+      override val location: String            = Constants.Endpoints.logout
+      override val method: Method              = Post
       override val onResponse: Response => Msg = _ => LogoutSuccess
-      override val onError: HttpError => Msg  = _ => LogoutFailure
+      override val onError: HttpError => Msg   = _ => LogoutFailure
     }
 
     val checkToken: Endpoint[Msg] = new Endpoint[Msg] {

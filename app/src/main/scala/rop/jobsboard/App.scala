@@ -3,7 +3,7 @@ package rop.jobsboard
 import cats.effect.*
 import org.scalajs.dom.{console, document, window}
 import rop.jobsboard.core.Session
-import rop.jobsboard.components.Header
+import rop.jobsboard.components.{Footer, Header}
 import rop.jobsboard.core.Router
 import rop.jobsboard.core.Router.{ChangeLocation, ExternalRedirect}
 import rop.jobsboard.pages.Page
@@ -57,13 +57,14 @@ class App extends TyrianApp[App.Msg, App.Model] {
   }
 
   override def view(model: Model): Html[Msg] = {
-    div(
+    div(`class` := "app")(
       Header.view(),
       main(
         div(`class` := "container-fluid")(
           model.page.view()
         )
-      )
+      ),
+      Footer.view()
     )
   }
 
