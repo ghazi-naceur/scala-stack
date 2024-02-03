@@ -95,3 +95,17 @@ lazy val server = (project in file("server"))
     Compile / mainClass := Some("rop.jobsboard.Application")
   )
   .dependsOn(core.jvm)
+
+
+lazy val stagingBuild = (project in (file("build/staging")))
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
+  .settings(
+    name            := "rop-jobsboard-staging",
+    scalaVersion    := scala3Version,
+    organization    := rop,
+    dockerBaseImage := "openjdk:11-jre-slim-buster",
+    dockerExposedPorts ++= Seq(4041),
+    Compile / mainClass         := Some("rop.jobsboard.Application"),
+    Compile / resourceDirectory := ((server / Compile / resourceDirectory).value / "staging")
+  )
+  .dependsOn(server)

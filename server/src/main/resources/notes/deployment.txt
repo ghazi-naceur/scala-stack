@@ -1,0 +1,147 @@
+
+Get public ip address:
+> lsb_release -a && ip r
+
+1- Deploy image locally:
+> sbt
+> stagingBuild / Docker / publishLocal
+
+2- Check image "rop-jobsboard-staging":
+> docker image ls
+    REPOSITORY              TAG                  IMAGE ID       CREATED         SIZE
+    rop-jobsboard-staging   0.1.0-SNAPSHOT       fa693263622d   2 minutes ago   271MB
+    postgres                latest               fbd1be2cbb1f   4 months ago    417MB
+    openjdk                 11-jre-slim-buster   cc0d7e216e18   18 months ago   216MB
+    testcontainers/ryuk     0.3.3                64f4b02dc986   2 years ago     12MB
+
+3- Save image to be sent to the cloud provider:
+> docker save -o server.tar rop-jobsboard-staging:0.1.0-SNAPSHOT
+  => "server.tar" will be in the base root of the project
+
+4- Send this tar file to the cloud provider:
+> scp server.tar your-user@ip-of-your-machine:/home/gnin/staging  (make sure to create a directory "staging" on the server + permissions)
+
+5- Docker on server:
+    Install docker on your server: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-22-04
+    Install docker-compose:
+> sudo apt install docker-compose
+
+
+6- Create the docker compose file your app under '/staging' with the correct env values:
+
+> vim docker-compose.yml
+
+```
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - "POSTGRES_USER=docker"
+      - "POSTGRES_PASSWORD=docker"
+    ports:
+      - "5432:5432"
+
+  server:
+    image: rop-jobsboard-staging:0.1.0-SNAPSHOT
+    restart: always
+    ports:
+      - "4041:4041"
+    environment:
+      - "POSTGRES_URL=jdbc:postgresql://db:5432/board"
+      - "POSTGRES_CONFIG_USER=docker"
+      - "POSTGRES_CONFIG_PASS=docker"
+      - "STRIPE_CONFIG_KEY=your config here"
+      - "STRIPE_CONFIG_PRICE=your config here"
+      - "STRIPE_CONFIG_SUCCESS_URL=http://your-machine-ip:port/jobs"
+      - "STRIPE_CONFIG_CANCEL_URL=http://your-machine-ip:port"
+      - "STRIPE_CONFIG_WEBHOOK_SECRET=your config here, make sure you set up webhook in Stripe"
+      // STRIPE_CONFIG_WEBHOOK_SECRET: should be set for the new machine ip, not localhost-dev, eg: "http://191.166.19.7:4041/api/jobs/webhook"
+      // In Stripe, don't forget as well to set/check/add all checkout events
+      // After adding the new webhook endpoint, you will find the key secret in "Signing secret", and that's the one you should use for this ENV_VAR
+```
+
+6- Load the Docker image as standalone:
+> docker load -i server.tar
+
+7- Spin docker container for your image and your DB:
+> docker-compose up -d
+
+8- Check containers status:
+> docker ps
+> docker logs -f staging_server_1
+> docker exec -it staging_db_1 psql -U docker
+```
+CREATE DATABASE board;
+\c board;
+
+CREATE TABLE jobs (
+    id uuid DEFAULT gen_random_uuid(),
+    date bigint NOT NULL,
+    ownerEmail text NOT NULL,
+    company text NOT NULL,
+    title text NOT NULL,
+    description text NOT NULL,
+    externalUrl text NOT NULL,
+    remote boolean NOT NULL DEFAULT false,
+    location text,
+    salaryLo integer,
+    salaryHi integer,
+    currency text,
+    country text,
+    tags text[],
+    image text,
+    seniority text,
+    other text,
+    active boolean NOT NULL DEFAULT false
+);
+
+ALTER TABLE jobs
+ADD CONSTRAINT pk_jobs PRIMARY KEY (id);
+
+CREATE TABLE users(
+  email text NOT NULL,
+  hashedPassword text NOT NULL,
+  firstName text,
+  lastName text,
+  company text,
+  role text NOT NULL
+);
+
+ALTER TABLE users
+ADD CONSTRAINT pk_users PRIMARY KEY (email);
+
+CREATE TABLE recoverytokens (
+    email text NOT NULL,
+    token text NOT NULL,
+    expiration bigint NOT NULL
+);
+
+ALTER TABLE recoverytokens
+ADD CONSTRAINT pk_recoverytokens PRIMARY KEY (email);
+```
+
+> select * from jobs;
+
+> \q   // to exit DB container
+
+9- Check the connection between the app and the DB, from server side:
+> curl localhost:4041/api/health
+> curl localhost:4041/api/jobs/filters
+    => Result: {"companies":[],"locations":[],"countries":[],"seniorities":[],"tags":[],"maxSalary":null,"remote":false}
+    => App can communicate with DB
+
+
+10- Install nginx on the server: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-20-04
+
+11- Allow Nginx in the firewall with 'Nginx Full' to set a certificate for HTTPS afterward
+> sudo ufw allow 'Nginx Full'
+> sudo ufw allow 'OpenSSH'
+
+12- Create a web domain for the app: jobs-staging.rop.com:
+> sudo mkdir -p /var/www/jobs-staging.rop.com/html
+> sudo chown -R $USER:$USER /var/www/jobs-staging.rop.com/html
+> sudo chmod -R 755 /var/www/jobs-staging.rop.com
+
