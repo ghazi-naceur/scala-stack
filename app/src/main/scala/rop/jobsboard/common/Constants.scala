@@ -1,6 +1,8 @@
 package rop.jobsboard.common
 
-import scala.scalajs.js
+import org.scalajs.dom.window
+
+import scala.scalajs.{LinkingInfo, js}
 import scala.scalajs.js.annotation.*
 import scala.util.matching.Regex
 
@@ -23,7 +25,9 @@ object Constants {
   val jobAdvertPriceEUR = 99
 
   object Endpoints {
-    val root            = "http://localhost:4041"
+    val root =
+      if (LinkingInfo.developmentMode) "http://localhost:4041"
+      else window.location.origin // to get the fully qualified domain of the host (or ip)
     val signup          = s"$root/api/auth/users"
     val login           = s"$root/api/auth/login"
     val logout          = s"$root/api/auth/logout"

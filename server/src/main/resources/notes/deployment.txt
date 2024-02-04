@@ -55,8 +55,8 @@ services:
       - "POSTGRES_CONFIG_PASS=docker"
       - "STRIPE_CONFIG_KEY=your config here"
       - "STRIPE_CONFIG_PRICE=your config here"
-      - "STRIPE_CONFIG_SUCCESS_URL=http://your-machine-ip:port/jobs"
-      - "STRIPE_CONFIG_CANCEL_URL=http://your-machine-ip:port"
+      - "STRIPE_CONFIG_SUCCESS_URL=http://your-machine-ip-and-port-or-your-domain/jobs"
+      - "STRIPE_CONFIG_CANCEL_URL=http://your-machine-ip-and-port-or-your-domain"
       - "STRIPE_CONFIG_WEBHOOK_SECRET=your config here, make sure you set up webhook in Stripe"
       // STRIPE_CONFIG_WEBHOOK_SECRET: should be set for the new machine ip, not localhost-dev, eg: "http://191.166.19.7:4041/api/jobs/webhook"
       // In Stripe, don't forget as well to set/check/add all checkout events
@@ -145,3 +145,129 @@ ADD CONSTRAINT pk_recoverytokens PRIMARY KEY (email);
 > sudo chown -R $USER:$USER /var/www/jobs-staging.rop.com/html
 > sudo chmod -R 755 /var/www/jobs-staging.rop.com
 
+13- Build the frontend in a fully optimized way (not dev mode):
+> sbt app/fullOptJS
+    => The generated files will be under folder 'target/scala-3.2.1/app-opt/', in which you're going to find 'main.js' and
+    'main.js.map' files. You can find these files as well under 'target/scala-3.2.1'
+
+14- Create folder 'build' under 'app' project
+
+15- Copy 'app.js' and 'index.html' located under 'app/' into 'build'
+
+16- Update file 'app/build/app.js' to reference the production build generated file, instead of the development file:
+    Instead of: "import { JobsBoardFE } from './target/scala-3.2.1/app-fastopt.js';"
+    to        : "import { JobsBoardFE } from '../target/scala-3.2.1/app-opt.js';" // ".." to reference the target folder correctly
+
+17- Update file 'app/build/index.html' to reference correctly the CSS files:
+    So instead of './css/header.css' to '../css/header.css'
+
+18- Build these files using npm, by updating 'package.json':
+    Instead of building the 'index.html' on the app root project, we're going to build the 'index.html' in 'app/build'.
+    package.json:
+        Instead of: ""build": "parcel build index.html --dist-dir dist --log-level info""
+        to        : ""build": "parcel build build/index.html --dist-dir dist --log-level info""
+
+19- Go under 'app' project and run the build command:
+> cd app
+> npm run build
+    => Result: It will generate a highly optimized index.html and app.js and all the resources necessary including CSS and pictures
+    under folder 'app/dist'. Then we will ship this entire distribution of folder dist to the host/cloud
+
+20- Shipping generated files to host:
+- Go to host, under:
+> cd /var/www/jobs-staging.rop.com/html
+> pwd // to get the full path => '/var/www/jobs-staging.rop.com/html'
+
+- Send all files from local machine 'app/dist' to host under path '/var/www/jobs-staging.rop.com/html':
+> scp * your-user@your-machine-ip:/var/www/jobs-staging.rop.com/html
+    => Result: You can check the all local generated files under 'app/dist' got copied under '/var/www/jobs-staging.rop.com/html' in the host
+
+21- Make Nginx server in host know about the new website, so we need to re-route it.
+    If you don't have your own domain, we can make Nginx reference your own directory '/var/www/jobs-staging.rop.com'.
+    To do that, we need to add some configuration in Nginx: (see documentation: https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-20-04)
+- Create this file and copy the following content if you have your own domain, otherwise update the default file '/etc/nginx/sites-available/default ':
+> sudo vim /etc/nginx/sites-available/jobs-staging.domain.com // if you have your own domain
+> sudo vim /etc/nginx/sites-available/default  // if you don't have your own domain, so before doing that, maybe it's wise to keep a copy from default file
+> sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/original-default
+> sudo vim /etc/nginx/sites-available/default
+```
+server {
+        listen 80;
+        listen [::]:80;
+
+        root /var/www/jobs-staging.rop.com/html;
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name jobs-staging.domain.com www.jobs-staging.domain.com;
+
+        # Any incoming request to '/api' on this server managed by Nginx is going to be re-route to http://localhost:4041
+        location /api {
+                proxy_pass http://localhost:4041;
+        }
+         # Return 200 and index.html, when receiving 404
+         error_page 404 =200 /index.html;
+}
+```
+
+and then return nginx:
+> sudo systemctl restart nginx
+
+22- Make the website ready by creating a symbolic link:
+> sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/ (for someone who doesn't have a domain)
+    => Result: This link already exists
+> sudo ln -s /etc/nginx/sites-available/jobs-staging.domain.com /etc/nginx/sites-enabled/ (for someone who have a domain)
+
+- then check that the symbolic link was created:
+> cd /etc/nginx/sites-enabled
+> ll
+
+23- Add a config to eliminate what's called a hashed bucket problem:
+> sudo vim /etc/nginx/nginx.conf
+and uncomment this line: "server_names_hash_bucket_size 64;"
+
+To check that there is no syntax errors in your Nginx files, execute this command:
+    > sudo nginx -t
+    => Result:
+    nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+    nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+24- Restart Nginx:
+> sudo systemctl restart nginx
+    Result: Your app will be available under the host ip in the browser
+
+25- If you want to setup a domain, you need to use a DNS provider (like: https://www.cloudflare.com/)
+
+- Go you domain and add a "Record" with the name of the sub-domain you want to add, and and your server's IP address + deactivate Proxy
+- ping you new domain: 'ping your-new-sub-domain'
+
+26- After changing some env vars in your docker-compose.yml file, you need to follow these steps:
+> docker-compose stop
+> docker-compose up -d
+
+27- Make the website secure using HTTPS, by executing these commands:
+https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-22-04
+> docker-compose stop
+> docker-compose up -d
+> sudo snap install core; sudo snap refresh core
+> sudo apt remove certbot
+> sudo snap install --classic certbot
+> sudo ln -s /snap/bin/certbot /usr/bin/certbot
+> sudo vim /etc/nginx/sites-available/jobs-staging.domain.com
+- update : ...
+           server_name jobs-staging.domain.com www.jobs-staging.domain.com;
+           ...
+> sudo nginx -t
+> sudo systemctl reload nginx
+
+- Allow HTTPS through the firewall:
+> sudo ufw status
+> sudo ufw allow 'Nginx Full'
+> sudo ufw delete allow 'Nginx HTTP' # not necessary
+
+- Obtain an SSL certificate:
+> cd /etc/nginx/sites-available
+> sudo certbot --nginx -d jobs-staging.domain.com -d www.jobs-staging.domain.com # => returns an error at the moment
+so try this one:
+> sudo certbot --nginx -d jobs-staging.domain.com
+> sudo systemctl status snap.certbot.renew.service
+> sudo certbot renew --dry-run
